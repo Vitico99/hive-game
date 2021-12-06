@@ -4,8 +4,10 @@
 :- dynamic frontier/2. % frontier(X,Y): cell(X,Y) is a frontier cell, this is an empty cell that is adyacent to a bug of the hive.
 :- dynamic visited/2. % visited(X,Y): cell(X,Y) has been visited by dfs.
 
-init_board():-
-    assert(frontier(100,100)).
+init_board(C1, C2):-
+    assert(frontier(100,100)),
+    assert(firstBug(C1)),
+    assert(firstBug(C2)).
 
 % Adyacent definition for an hexagonal grid
 adyacent(X1,Y1,X2,Y2):- X2 is X1 - 1, Y2 is Y1.
@@ -53,6 +55,11 @@ getAllPlaceableCells(PlaceablePositions):-
 placeableByColor(X,Y,C):-
     frontier(X,Y), 
     \+ adyacentOpponent(X,Y,_,_,C).
+
+placeableByColor(X,Y,C):- % Edge case of the first bug of the second player
+    firstBug(C),
+    frontier(X,Y),
+    retract(firstBug(C)).
 
 getBug(X,Y, S, bug(P,T,X,Y,S)):-%Get the bug in Position X,Y with stack number S
     bug(P,T,X,Y,S).
