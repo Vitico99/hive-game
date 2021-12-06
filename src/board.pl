@@ -40,6 +40,15 @@ adyacentOpponent(X1, Y1, X2, Y2, C1):- %ok
     bug(C2, _, X2, Y2, _),
     C1 \== C2.
 
+% nonIsolated(X1,Y1,X2,Y2):-
+%     nonEmptyAdyacent(X2, Y2, X3, Y3),
+%     X1 \== X3,
+%     Y1 \== Y3.
+
+% isolated(X1,Y1,X2,Y2):-
+%     \+ nonIsolated(X1,Y1,X2,Y2).
+
+
 isIsolated(X,Y):-
     findall([X1,Y1], nonEmptyAdyacent(X,Y, X1,Y1),L),
     length(L, 1).
@@ -129,11 +138,10 @@ checkFirstBug(C):-
     \+ firstBug(C).
 
 checkFirstBug(C):-
-    firstBug(C),
     retract(firstBug(C)).
     
 removeBug(X,Y):- % Remove Position X,Y. Assumes there is only one bug in cell.
     getBug(X,Y,0,Bug),
-    forall(isolatedEmptyAdyacent(X,Y,X1,Y1), retract(placeable(X1,Y1))),
+    forall(isolatedEmptyAdyacent(X,Y,X1,Y1), retractall(frontier(X1,Y1))),
     retract(Bug),
-    assertz(placeable(X,Y)).
+    assertz(frontier(X,Y)).
