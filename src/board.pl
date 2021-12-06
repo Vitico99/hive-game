@@ -1,4 +1,4 @@
-:- module(board, []).
+:- module(board, [init_board/0,init_board/2, accesible_cell/4]).
 
 :- dynamic bug/5. % bug(Color, Type of Bug, X pos, Y pos, Stack pos)
 :- dynamic frontier/2. % frontier(X,Y): cell(X,Y) is a frontier cell, this is an empty cell that is adyacent to a bug of the hive.
@@ -6,6 +6,28 @@
 
 init_board():-
     assert(frontier(450,390)).
+
+init_board(X,Y):-
+    assert(frontier(X,Y)).
+
+cellsAreDistinct(X1,_, X2,_):- X1\==X2, !.
+cellsAreDistinct(_, Y1,_, Y2):- Y1 \== Y2 ,!.
+ 
+
+cellsAreDistinct(_,_,[]).
+cellsAreDistinct(X1, Y1,[[X2,Y2]| R]):-
+    cellsAreDistinct(X1,Y1, X2, Y2),
+    cellsAreDistinct(X1,Y1, R).
+
+cellsAreDistinct([]).
+cellsAreDistinct([[X1,Y1]| R]):-
+    cellsAreDistinct(X1,Y1, R),
+    cellsAreDistinct(R).
+
+cellNonStacked(X,Y):-
+    findall(S, bug(_,_,X,Y,S), Stack),
+    length(Stack, L),
+    L =<1.
 
 % Adyacent definition for an hexagonal grid
 adyacent(X1,Y1,X2,Y2):- X2 is X1 - 1, Y2 is Y1.
@@ -34,6 +56,17 @@ adyacentOpponent(X1, Y1, X2, Y2, C1):-
     bug(C2, _, X2, Y2, _),
     C1 \== C2.
 
+accesible_cell(X1,Y1, X2, Y2):-
+    frontierAdyacent(X1,Y1,X2,Y2),
+    emptyAdyacent(X2,Y2, X3,Y3),
+    emptyAdyacent(X1, Y1, X3,Y3),    
+    nonEmptyAdyacent(X2,Y2, X4,Y4),
+    cellsAreDistinct(X1,Y1, X4,Y4).
+
+canBeRemoved(X,Y):- getBug(X,Y,0, Bug), retract(Bug), isBoardConnected(),!,assert(Bug).
+canBeRemoved(X,Y):- getBug(X,Y,0, Bug), retract(Bug), \+ isBoardConnected(),!,assert(Bug), fail.
+
+
 isIsolated(X,Y):-
     findall([X1,Y1], nonEmptyAdyacent(X,Y, X1,Y1),L),
     length(L, 1).
@@ -46,8 +79,8 @@ placeBug(C,T,X,Y):-
     assert(bug(C,T,X,Y,0)), retract(frontier(X,Y)), 
     forall(emptyAdyacent(X,Y,X1,Y1), assert(frontier(X1, Y1))). % expand the frontier of the hive
 
-getAllPlaceableCells(PlaceablePositions):-
-    findall([X,Y],placeable(X,Y),PlaceablePositions).
+getFrontier(Frontier):-
+    findall([X,Y],frontier(X,Y),Frontier).
 
 % Checks if a bug of Color C can be placed at cell (X,Y)
 placeableByColor(X,Y,C):-
@@ -62,7 +95,6 @@ removeBug(X,Y):- % Remove Position X,Y. Assumes there is only one bug in cell.
     forall(isolatedEmptyAdyacent(X,Y,X1,Y1), retract(placeable(X1,Y1))),
     retract(Bug),
     assert(placeable(X,Y)).
-
 
 isBoardConnected():- \+bug(_,_,_,_,_), !.
 isBoardConnected():-
@@ -79,4 +111,4 @@ isBoardConnected(X,Y):-
     
 toVisit(X,Y, X1,Y1):-
     nonEmptyAdyacent(X,Y,X1,Y1),
-    \+visited(X1,Y1).
+    \+ visited(X1,Y1).
