@@ -6,7 +6,7 @@
 
 % Board state variables
 :- dynamic color/1.
-:- dynamic currentColor/1.
+:- dynamic currentColor/1. 
 :- dynamic availableBug/3. %availableBug(C, T, Cnt) there is Cnt bugs of type T and color C that can be placed
 
 % Utils
@@ -27,7 +27,7 @@ emptyAdyacent(X1, Y1, X2, Y2):- %ok
     adyacent(X1, Y1, X2, Y2), 
     empty(X2, Y2).
 
-nonEmptyAdyacent(X,Y, X1, Y1):-
+nonEmptyAdyacent(X,Y, X1, Y1):- %ok
     adyacent(X,Y,X1,Y1), 
     \+empty(X1,Y1).
 
@@ -60,28 +60,33 @@ placeableByColor(X,Y,C):- % Edge case of the first bug of the second player
     firstBug(C),
     frontier(X,Y).
 
+% Checks if a bug at cell (X,Y) can be removed from the hive
+% A bug can be removed if and only if the hive remains connected without the bug.
+canBeRemoved(X,Y):-
+    nonEmptyAdyacent(X,Y,X2,Y2), assertz(visited(X,Y)),
+    isBoardConnected(X2, Y2),
+    findall([X3, Y3], visited(X3,Y3), AllVisited),
+    findall([X4, Y4], bug(_,_,X4,Y4,0), NonEmptyCells),!,
+    (\+forall(visited(X1,Y1), retract(visited(X1,Y1)));
+    same_length(AllVisited,NonEmptyCells)).
+
+isBoardConnected(X,Y):-
+    assertz(visited(X,Y)),
+    forall(toVisit(X,Y,X2,Y2), isBoardConnected(X2,Y2)).
+
+
 getBug(X,Y, S, bug(P,T,X,Y,S)):-%Get the bug in Position X,Y with stack number S
     bug(P,T,X,Y,S).
 
-isBoardConnected():- \+bug(_,_,_,_,_), !.
-isBoardConnected():-
-    bug(_,_,X,Y,_),
-    !,
-    forall(visited(X1,Y1), retract(visited(X1,Y1))),
-    isBoardConnected(X,Y).
-isBoardConnected(X,Y):-
-    assertz(visited(X,Y)),
-    forall(toVisit(X,Y,X2,Y2), isBoardConnected(X2,Y2)),
-    findall([X3,Y3], visited(X3,Y3), AllVisited),
-    findall([X4,Y4], bug(_,_,X4,Y4,0), NonEmptyCells ),
-    same_length(AllVisited, NonEmptyCells).
-    
+
 toVisit(X,Y, X1,Y1):-
     nonEmptyAdyacent(X,Y,X1,Y1),
     \+visited(X1,Y1).
 
 
-% Board state modifying predicates
+
+
+% =============================== Board state modifying predicates
 
 initBoard(C1, C2):-
     assertz(frontier(100,100)),
