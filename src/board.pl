@@ -7,6 +7,7 @@
 % Board state variables
 :- dynamic color/1.
 :- dynamic currentColor/1.
+:- dynamic availableBug/3. %availableBug(C, T, Cnt) there is Cnt bugs of type T and color C that can be placed
 
 % Utils
 :- dynamic visited/2. % visited(X,Y): cell(X,Y) has been visited by dfs.
@@ -57,8 +58,7 @@ placeableByColor(X,Y,C):- %ok
 
 placeableByColor(X,Y,C):- % Edge case of the first bug of the second player
     firstBug(C),
-    frontier(X,Y),
-    retract(firstBug(C)).
+    frontier(X,Y).
 
 getBug(X,Y, S, bug(P,T,X,Y,S)):-%Get the bug in Position X,Y with stack number S
     bug(P,T,X,Y,S).
@@ -87,7 +87,25 @@ initBoard(C1, C2):-
     assertz(frontier(100,100)),
     assertz(color(C1)), assertz(color(C2)),
     assertz(firstBug(C2)),
-    assertz(currentColor(C1)).
+    assertz(currentColor(C1)),
+
+    assertz(availableBug(C1, queen, 1)),
+    assertz(availableBug(C1, beetle, 2)),
+    assertz(availableBug(C1, grasshoper, 3)),
+    assertz(availableBug(C1, spider, 2)),
+    assertz(availableBug(C1, ant, 3)),
+    assertz(availableBug(C1, ladybug, 1)),
+    assertz(availableBug(C1, mosquito, 1)),
+    assertz(availableBug(C1, pigbull, 1)),
+
+    assertz(availableBug(C2, queen, 1)),
+    assertz(availableBug(C2, beetle, 2)),
+    assertz(availableBug(C2, grasshoper, 3)),
+    assertz(availableBug(C2, spider, 2)),
+    assertz(availableBug(C2, ant, 3)),
+    assertz(availableBug(C2, ladybug, 1)),
+    assertz(availableBug(C2, mosquito, 1)),
+    assertz(availableBug(C2, pigbull, 1)).
 
 changeCurrentColor:-
     %Add check if the non current player can move before updating
@@ -95,10 +113,20 @@ changeCurrentColor:-
     color(C2), \+ currentColor(C2),
     retract(currentColor(C1)), assertz(currentColor(C2)).
 
-placeBug(C,T,X,Y):-
+placeBug(C,T,X,Y):- %ok
+    availableBug(C,T,Cnt), Cnt1 is Cnt - 1,
+    retract(availableBug(C,T,Cnt)), assertz(availableBug(C,T,Cnt1)),
+    checkFirstBug(C),
     assertz(bug(C,T,X,Y,0)), retractall(frontier(X,Y)), 
     forall(emptyAdyacent(X,Y,X1,Y1), assertz(frontier(X1, Y1))). % expand the frontier of the hive
 
+checkFirstBug(C):-
+    \+ firstBug(C).
+
+checkFirstBug(C):-
+    firstBug(C),
+    retract(firstBug(C)).
+    
 removeBug(X,Y):- % Remove Position X,Y. Assumes there is only one bug in cell.
     getBug(X,Y,0,Bug),
     forall(isolatedEmptyAdyacent(X,Y,X1,Y1), retract(placeable(X1,Y1))),
