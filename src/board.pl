@@ -5,7 +5,7 @@
 :- dynamic visited/2. % visited(X,Y): cell(X,Y) has been visited by dfs.
 
 init_board():-
-    assert(frontier(450,390)).
+    assert(frontier(100,100)).
 
 % Adyacent definition for an hexagonal grid
 adyacent(X1,Y1,X2,Y2):- X2 is X1 - 1, Y2 is Y1.
@@ -43,7 +43,7 @@ isolatedEmptyAdyacent(X1, Y1, X2, Y2):- % X2, Y2 is only adyacnet to X1,Y1
     isIsolated(X2,Y2).
 
 placeBug(C,T,X,Y):-
-    assert(bug(C,T,X,Y,0)), retract(frontier(X,Y)), 
+    assert(bug(C,T,X,Y,0)), retractall(frontier(X,Y)), 
     forall(emptyAdyacent(X,Y,X1,Y1), assert(frontier(X1, Y1))). % expand the frontier of the hive
 
 getAllPlaceableCells(PlaceablePositions):-
