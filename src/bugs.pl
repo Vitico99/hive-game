@@ -16,7 +16,6 @@
 getDestinations(X,Y,T,C):-
     board:currentColor(C),
     forall(destination(A,B), retractall(destination(A,B))),
-    write_ln('toy aqui puta'),
     bugDestinations(X,Y,T),
     (overPillbugDestinations(X,Y); write_ln('Generated possible moves 1')).
 
