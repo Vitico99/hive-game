@@ -159,7 +159,7 @@ checkFirstBug(C):-
 
 checkFirstBug(C):-
     retract(firstBug(C)).
-    
+
 % ================================= Utills ==========================================    
 
 % cellsAreDistinct/4
@@ -182,3 +182,15 @@ cellsAreDistinct([[X1,Y1]| R]):-
 % Get the bug in Position X,Y with stack number S
 getBug(X, Y, S, bug(P,T,X,Y,S)):- 
     bug(P,T,X,Y,S).
+
+opponent(C1, C2):-
+    color(C1),
+    color(C2),
+    C1 \== C2.
+
+
+% ================================= Metrics ==========================================  
+colorWin(C):-
+    opponent(C, C1),
+    bug(C1, queen, X1, Y1,0),!,
+    \+ emptyAdyacent(X1,Y1,_,_). 
