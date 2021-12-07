@@ -1,6 +1,7 @@
 :-use_module(library(pce)).
 :-use_module(board).
-:- dynamic selectedBug/2.
+:-use_module(bugs).
+:- dynamic selectedBug/3.
 :- dynamic drawedPlaceable/3.
 
 % Resources 45x25px
@@ -115,8 +116,8 @@ selectBugForPlacement(Color, Type):-
     board:currentColor(Color),
     board:availableBug(Color, Type, Cnt),
     Cnt > 0,
-    retractall(selectedBug(_,_)),
-    assertz(selectedBug(Color, Type)),
+    retractall(selectedBug(_,_,_)),
+    assertz(selectedBug(Color, Type, place)),
     drawPlaceableCells(Color).
 
 
@@ -133,17 +134,47 @@ drawPlaceableCell(X, Y, Cell):-
     send(Board, display, Cell), 
     assertz(drawedPlaceable(X,Y,Cell)).
 
-drawBugCell(X, Y):-
-    selectedBug(C, T), % Get the bug that is going to be drawn
+drawDestinationCells(C, T, X1, Y1, Cell, B):-
+    board:canBeRemoved(X1,Y1),
+    retractall(selectedBug(_,_,_)),
+    assertz(selectedBug(C, T, move)),
+    write_ln(T),
+    bugs:getDestinations(X1,Y1,T),
+    write_ln('here'),
+    forall(bugs:isPossibleDestination(X1,Y1,X2,Y2,T), drawDestinationCell(X1,Y1,X2,Y2,Cell,B)).
+
+drawDestinationCell(X1,Y1,X2,Y2,BugCell,B):-
+    board(Board), % Get the resources
+    translate(X2,Y2,X3,Y3),
+    hexagon(X3,Y3,Cell,lightgreen),
+    send(Cell, recogniser, click_gesture(left, '', single, message(@prolog, moveBug, X1, Y1, X2, Y2, BugCell, B))),
+    send(Board, display, Cell),
+    assertz(drawedPlaceable(X2,Y2,Cell)).
+
+moveBug(X1,Y1,X2,Y2,BugCell, B):-
+    clearPlaceableCells, 
+    send(BugCell, free), 
+    send(B, free),
+    board:removeBug(X1,Y1),
+    drawBugCell(X2,Y2).
+    
+
+drawBugCell(X, Y):- %add another mode like place/move to use the line that updates the counter
+    selectedBug(C, T, _), % Get the bug that is going to be drawn
+    write_ln('voa pintar'),
     board(Board), bm(C, T, Bm), % Get the resources
     translate(X,Y,X1,Y1),
     hexagon(X1,Y1,Cell,C),
     new(B, bitmap(Bm)),
     send(Board, display, Cell),
+    send(Cell, recogniser, click_gesture(left, '', single, message(@prolog, drawDestinationCells, C, T, X, Y, Cell, B))),
     send(Board, display, B, point(X1-21, Y1-12)),
     board:placeBug(C,T,X,Y),
+    (   %if we draw a bug that was moved then we don't need to update the counters
+        selectedBug(_,_,move); 
+        (board:updateBugCount(C,T), updateCounter(C,T))
+    ),
     board:changeCurrentColor,
-    updateCounter(C,T),
     clearPlaceableCells.
 
 clearPlaceableCells():-
