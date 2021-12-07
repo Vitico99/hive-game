@@ -142,7 +142,7 @@ drawDestinationCells(C, T, X1, Y1, Cell, B):-
     bugs:getDestinations(X1,Y1,T,C),
     write_ln('here'),
     clearPlaceableCells,
-    forall(bugs:isPossibleDestination(X1,Y1,X2,Y2,T,C), drawDestinationCell(X1,Y1,X2,Y2,Cell,B)).
+    forall(bugs:destination(X2,Y2), drawDestinationCell(X1,Y1,X2,Y2,Cell,B)).
 
 drawDestinationCell(X1,Y1,X2,Y2,BugCell,B):-
     board(Board), % Get the resources
