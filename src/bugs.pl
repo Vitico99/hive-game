@@ -1,31 +1,58 @@
 :-module(bugs, []).
 :-use_module(board).
 
+:- dynamic isPossibleDestination/5.
+:- dynamic getDestinations/3.
+
 :- dynamic destination/2.
 :- dynamic visited/2.
 
-% Queen
 
-queenDestinations(X, Y, D):-
-    findall([X1, Y1], board:accesible_cell(X, Y, X1, Y1), D).
+% ================================= API ====================================
+% This section provides two predicates to obtain the possible moves for a bug:
+% - isPossibleDestination/5: exposes a generator for possible moves according to the type of bug
+% - getDestinations/3: precomputes the possible moves to be exposed throw isPossibleDestination.
 
-% Beetle
 
-beetleDestinations(X, Y, D):-
-    findall([X1, Y1],beetleToVisit(X, Y, X1, Y1), D).
+% getDestinations/3
+getDestinations(_,_,queen).
+getDestinations(_,_,beetle).
+getDestinations(X,Y,grasshoper):-
+    grasshoperDestinations(X,Y).
+getDestinations(_,_,spider).
+getDestinations(X,Y,ant):-
+    antDestinations(X,Y).
+getDestinations(_,_,ladybug).
 
-beetleToVisit(X1, Y1, X2, Y2):-
-    board:accesible_cell(X1, Y1, X2, Y2);
-    board:nonEmptyAdyacent(X1, Y1, X2, Y2).
 
+% isPossibleDestination/5
+isPossibleDestination(X1, Y1, X2, Y2, queen):- % Queen
+    board:accesibleCell(X1, Y1, X2, Y2).
+
+isPossibleDestination(X1, Y1, X2, Y2, beetle):- % Beetle
+    board:accesibleCell(X1,Y1,X2,Y2);
+    board:nonEmptyAdyacent(X1,Y1,X2,Y2).
+
+isPossibleDestination(_, _, X2, Y2, grasshoper):- % Grasshoper
+    destination(X2,Y2).
+
+isPossibleDestination(X1, Y1, X2, Y2, spider):- % Spider
+    spiderDestination(X1, Y1, X2, Y2).
+
+isPossibleDestination(_, _, X2, Y2, ant):- % Ant
+    destination(X2,Y2).
+
+isPossibleDestination(X1, Y1, X2, Y2, ladybug):- % Ladybug
+    ladybugDestination(X1, Y1, X2, Y2).
+
+% ============================== Implemenation =================================
+% Implementation of more complex moves generators
 
 % Grasshoper
 
-grasshoperDestinations(X, Y, D):-
+grasshoperDestinations(X, Y):-
     forall(destination(A,B), retract(destination(A,B))),
-    forall(board:nonEmptyAdyacent(X, Y, X1, Y1), grasshoperVisit(X, Y, X1, Y1)),
-    findall([X2,Y2], destination(X2,Y2), D).
-
+    forall(board:nonEmptyAdyacent(X, Y, X1, Y1), grasshoperVisit(X, Y, X1, Y1)).
 
 grasshoperVisit(_,_,X2,Y2):-
     board:empty(X2,Y2),
@@ -41,44 +68,37 @@ grasshoperVisit(X1,Y1,X2,Y2):-
 
 % Spider
 
-spiderDestinations(X, Y, D):-
-    findall([X1,Y1], spiderDestinations(X,Y, X1,Y1), D).
-
-spiderDestinations(X1,Y1, X4, Y4):-
-    canGoTo(X1, Y1, X1,Y1, X2, Y2),
-    canGoTo(X1, Y1, X2,Y2, X3, Y3),
-    canGoTo(X1,Y1, X3, Y3, X4, Y4),
+spiderDestination(X1,Y1, X4, Y4):-
+    spiderToVisit(X1, Y1, X1,Y1, X2, Y2),
+    spiderToVisit(X1, Y1, X2,Y2, X3, Y3),
+    spiderToVisit(X1,Y1, X3, Y3, X4, Y4),
     board:cellsAreDistinct([[X1,Y1], [X2,Y2], [X3,Y3], [X4,Y4]]).
     
-canGoTo(Sx,Sy,X1,Y1,X2,Y2):-
-    board:accesible_cell(X1,Y1,X2,Y2),
+spiderToVisit(Sx,Sy,X1,Y1,X2,Y2):-
+    board:accesibleCell(X1,Y1,X2,Y2),
     board:nonEmptyAdyacent(X2,Y2, X3, Y3),
     board:cellsAreDistinct(Sx,Sy, X3, Y3).
 
 % Ant
 
-antDestinations(X, Y, D):-
-    forall(visited(A,B), retract(visited(A,B))),
+antDestinations(X, Y):-
+    forall(destination(A,B), retract(destination(A,B))),
     antVisit(X, Y ,X , Y),
-    retract(visited(X,Y)),
-    findall([X1,Y1], visited(X1,Y1), D).
+    retract(destination(X,Y)).
 
 antVisit(Xs,Ys, Xc, Yc):-
-    assert(visited(Xc,Yc)),
+    assert(destination(Xc,Yc)),
     forall(antToVisit(Xs, Ys, Xc, Yc, X1, Y1), antVisit(Xs, Ys, X1, Y1)).
 
 antToVisit(Sx,Sy, X1, Y1, X2, Y2):-
-    board:accesible_cell(X1,Y1,X2,Y2),
-    \+ visited(X2, Y2),
+    board:accesibleCell(X1,Y1,X2,Y2),
+    \+ destination(X2, Y2),
     board:nonEmptyAdyacent(X2,Y2, X3,Y3),
     board:cellsAreDistinct(Sx,Sy, X3, Y3).
 
-
 % Ladybug
-ladybugDestinations(X,Y,D):-
-    findall([X1,Y1],ladybugDestinations(X,Y,X1,Y1), D).
 
-ladybugDestinations(X1,Y1,X4, Y4):-
+ladybugDestination(X1,Y1,X4, Y4):-
     board: nonEmptyAdyacent(X1,Y1,X2,Y2),
     board: nonEmptyAdyacent(X2,Y2, X3,Y3),
     board: frontierAdyacent(X3,Y3, X4,Y4),
@@ -92,12 +112,12 @@ ladybugDestinations(X1,Y1,X4, Y4):-
 % FromAdyacent: [X,Y] take the piece adyacent to pillbug in position X,Y
 % ToAdyacent: [X,Y] can place the piece taken by the pillbug in position X,Y
 pillbugDestinations(Px, Py, Lx, Ly, Pmove, FromAdyacent, ToAdyacent):-
-    findall([X1,Y1], board:accesible_cell(Px,Py,X1,Y1), Pmove), %Move the pillbug
+    findall([X1,Y1], board:accesibleCell(Px,Py,X1,Y1), Pmove), %Move the pillbug
     findall([X2,Y2], selectPiecesToMove(Px,Py,Lx,Ly,X2,Y2), FromAdyacent), %Select adyacent piece to pillbug
     findall([X3,Y3], board:frontierAdyacent(Px,Py,X3,Y3), ToAdyacent). %Move selected piece To Adyacent Position
     
 normalPlays(Px,Py, Moves):-
-    findall([X1, Y1], board:accesible_cell(Px, Py, X1, Y1), Moves).
+    findall([X1, Y1], board:accesibleCell(Px, Py, X1, Y1), Moves).
 
 selectPiecesToMove(Px,Py,Lx,Ly, X, Y):-
     board:nonEmptyAdyacent(Px,Py,X,Y),
@@ -111,3 +131,4 @@ selectPiecesToMove(Px,Py,Lx,Ly, X, Y):-
     board:cellsAreDistinct(X1,Y1,X2,Y2),
     board:cellNonStacked(X1,Y1),
     board:cellNonStacked(X2,Y2).
+
