@@ -113,9 +113,9 @@ updateCounter(Color, Type):-
 
 
 selectBugForPlacement(Color, Type):-
+    clearPlaceableCells,
     board:currentColor(Color),
-    board:availableBug(Color, Type, Cnt),
-    Cnt > 0,
+    board:placeableByColor(Color, Type),
     retractall(selectedBug(_,_,_)),
     assertz(selectedBug(Color, Type, place)),
     drawPlaceableCells(Color).
