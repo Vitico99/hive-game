@@ -1,6 +1,8 @@
 :-use_module(library(pce)).
 :-use_module(board).
 :-use_module(bugs).
+:-use_module(cpu).
+
 :- dynamic selectedBug/3.
 :- dynamic drawedPlaceable/3.
 
