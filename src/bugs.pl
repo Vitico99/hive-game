@@ -2,7 +2,6 @@
 :-use_module(board).
 
 :- dynamic getDestinations/4.
-
 :- dynamic destination/2.
 
 
@@ -116,7 +115,7 @@ overPillbugDestinations(X,Y):-
     board:bug(C1,pigbull,X1,Y1,0),
 
     board:opponent(C1, C2), % Check (X,Y) is not the last piece moved by the opponent
-    \+ board:lastPlacedBug(C2,_,X,Y,_),
+    \+ board:lastPlacedBug(C2,_,_,X,Y,_),
 
     board:cellNonStacked(X,Y),
 

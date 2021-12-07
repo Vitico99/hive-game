@@ -10,7 +10,7 @@
 :- dynamic availableBug/3. %availableBug(C, T, Cnt) there is Cnt bugs of type T and color C that can be placed
 
 :- dynamic visited/2. % visited(X,Y): cell(X,Y) has been visited by dfs.
-:- dynamic lastPlacedBug/5. % lastPlacedBug(Bug, C)
+:- dynamic lastPlacedBug/6. 
 :- dynamic opponent/2.
 
 % adyacent/4
@@ -143,8 +143,9 @@ changeCurrentColor:-
 % placeBug/4
 placeBug(C,T,X,Y):- 
     checkFirstBug(C),
-    assertz(bug(C,T,X,Y,0)), retractall(frontier(X,Y)), 
-    retractall(lastPlacedBug(C,_,_,_,_)), assertz(lastPlacedBug(C,T,X,Y,0)),
+    assertz(bug(C,T,X,Y,0)), retractall(frontier(X,Y)),
+    currentColor(C1),
+    retractall(lastPlacedBug(C1,_,_,_,_,_)), assertz(lastPlacedBug(C1,C,T,X,Y,0)),
     forall(emptyAdyacent(X,Y,X1,Y1), assertz(frontier(X1, Y1))). % expand the frontier of the hive
 
 % removeBug/2
@@ -188,3 +189,10 @@ cellsAreDistinct([[X1,Y1]| R]):-
 % Get the bug in Position X,Y with stack number S
 getBug(X, Y, S, bug(P,T,X,Y,S)):- 
     bug(P,T,X,Y,S).
+
+canBeMoved(X, Y, S):-
+    \+lastPlacedBug(_,_,_,X,Y,S).
+
+canBeMoved(X, Y, S):-
+    lastPlacedBug(C1, C2, _, X, Y, S),
+    C1 == C2.
