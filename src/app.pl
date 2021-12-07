@@ -135,6 +135,7 @@ drawPlaceableCell(X, Y, Cell):-
     assertz(drawedPlaceable(X,Y,Cell)).
 
 drawDestinationCells(C, T, X1, Y1, Cell, B):-
+    clearPlaceableCells,
     board:canBeRemoved(X1,Y1),
     board:canBeMoved(X1, Y1, 0),
     retractall(selectedBug(_,_,_)),
@@ -142,7 +143,6 @@ drawDestinationCells(C, T, X1, Y1, Cell, B):-
     write_ln(T),
     bugs:getDestinations(X1,Y1,T,C),
     write_ln('here'),
-    clearPlaceableCells,
     forall(bugs:destination(X2,Y2), drawDestinationCell(X1,Y1,X2,Y2,Cell,B)).
 
 drawDestinationCell(X1,Y1,X2,Y2,BugCell,B):-

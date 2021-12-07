@@ -190,8 +190,8 @@ cellsAreDistinct([[X1,Y1]| R]):-
 getBug(X, Y, S, bug(P,T,X,Y,S)):- 
     bug(P,T,X,Y,S).
 
-canBeMoved(X, Y, S):-
-    \+lastPlacedBug(_,_,_,X,Y,S).
+canBeMoved(X, Y, S):- %TODO fix this to remove the connection test when moving stacked bugs
+    \+ lastPlacedBug(_,_,_,X,Y,S).
 
 canBeMoved(X, Y, S):-
     lastPlacedBug(C1, C2, _, X, Y, S),
