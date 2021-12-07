@@ -166,7 +166,7 @@ checkFirstBug(C):-
 
 checkFirstBug(C):-
     retract(firstBug(C)).
-    
+
 % ================================= Utills ==========================================    
 
 % cellsAreDistinct/4
@@ -196,3 +196,15 @@ canBeMoved(X, Y, S):- %TODO fix this to remove the connection test when moving s
 canBeMoved(X, Y, S):-
     lastPlacedBug(C1, C2, _, X, Y, S),
     C1 == C2.
+
+opponent(C1, C2):-
+    color(C1),
+    color(C2),
+    C1 \== C2.
+
+% ================================= Metrics ==========================================  
+colorWin(C):-
+    opponent(C, C1),
+    bug(C1, queen, X1, Y1,0),!,
+    \+ emptyAdyacent(X1,Y1,_,_). 
+
