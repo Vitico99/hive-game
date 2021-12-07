@@ -167,20 +167,20 @@ changeCurrentColor:-
 placeBug(C,T,X,Y):- 
     checkFirstBug(C),
     getCellHeight(X,Y,H),
-    assertz(bug(C,T,X,Y,H)), retractall(frontier(X,Y)),
+    assertz(bug(C,T,X,Y,H)), retract(frontier(X,Y)),
     currentColor(C1),
     retractall(lastPlacedBug(C1,_,_,_,_,_)), assertz(lastPlacedBug(C1,C,T,X,Y,H)),
     updateCurrentTurn(C1),
-    forall(emptyAdyacent(X,Y,X1,Y1), assertz(frontier(X1, Y1))). % expand the frontier of the hive
+    forall(emptyAdyacent(X,Y,X1,Y1), setFrontier(X1,Y1)). % expand the frontier of the hive
 
 % removeBug/2
 removeBug(X,Y):- % Remove Position X,Y. Assumes there is only one bug in cell.
     getCellTop(X,Y,S),
     getBug(X,Y,S,Bug),
-    forall(isolatedEmptyAdyacent(X,Y,X1,Y1), retractall(frontier(X1,Y1))),
+    forall(isolatedEmptyAdyacent(X,Y,X1,Y1), retract(frontier(X1,Y1))),
     retract(Bug),
     S == 0,
-    assertz(frontier(X,Y)).
+    setFrontier(X,Y).
 removeBug(_,_).
 
 % updateBugCount/2
@@ -239,6 +239,12 @@ opponent(C1, C2):-
     color(C1),
     color(C2),
     C1 \== C2.
+
+setFrontier(X,Y):-
+    frontier(X,Y).
+
+setFrontier(X,Y):-
+    assertz(frontier(X,Y)).
 
 % ================================= Metrics ==========================================  
 colorWin(C):-
