@@ -1,17 +1,15 @@
 :-module(bugs, []).
 :-use_module(board).
 
-:- dynamic isPossibleDestination/5.
 :- dynamic getDestinations/4.
 
 :- dynamic destination/2.
-:- dynamic visited/2.
 
 
 % ================================= API ====================================
 % This section provides two predicates to obtain the possible moves for a bug:
-% - isPossibleDestination/5: exposes a generator for possible moves according to the type of bug
-% - getDestinations/3: precomputes the possible moves to be exposed throw isPossibleDestination.
+% - getDestinations/4: X, Y, T, C computes the possible moves of a bug of type T and color C from cell (X,Y).
+% - destination/2: can be used as a generator to get all possible moves
 
 
 % getDestinations/4
