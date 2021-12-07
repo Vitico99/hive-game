@@ -68,11 +68,6 @@ accesibleCell(X1, Y1, X2, Y2):-
 
 % cellNonStacked/2
 % there are no stacked bugs at cell (X,Y)
-% cellNonStacked(X,Y):-
-%     findall(S, bug(_,_,X,Y,S), Stack),
-%     length(Stack, L),
-%     L =< 1.
-
 cellNonStacked(X,Y):-
     getCellHeight(X,Y,H),
     H =< 1.
@@ -85,7 +80,6 @@ getCellTop(X,Y,S):-
     getCellHeight(X,Y,H),
     S is H-1.
 
-%
 placeableByColor(C,queen):-
     availableBug(C,queen,Cnt),
     Cnt > 0.
