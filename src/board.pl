@@ -10,6 +10,8 @@
 :- dynamic availableBug/3. %availableBug(C, T, Cnt) there is Cnt bugs of type T and color C that can be placed
 
 :- dynamic visited/2. % visited(X,Y): cell(X,Y) has been visited by dfs.
+:- dynamic lastPlacedBug/6. 
+:- dynamic opponent/2.
 
 % adyacent/4
 % Adyacent definition for an hexagonal grid
@@ -109,6 +111,9 @@ initBoard(C1, C2):-
     assertz(color(C1)), assertz(color(C2)),
     assertz(firstBug(C2)),
     assertz(currentColor(C1)),
+    assertz(opponent(C1,C2)),
+    assertz(opponent(C2,C1)),
+
 
     assertz(availableBug(C1, queen, 1)),
     assertz(availableBug(C1, beetle, 2)),
@@ -138,7 +143,9 @@ changeCurrentColor:-
 % placeBug/4
 placeBug(C,T,X,Y):- 
     checkFirstBug(C),
-    assertz(bug(C,T,X,Y,0)), retractall(frontier(X,Y)), 
+    assertz(bug(C,T,X,Y,0)), retractall(frontier(X,Y)),
+    currentColor(C1),
+    retractall(lastPlacedBug(C1,_,_,_,_,_)), assertz(lastPlacedBug(C1,C,T,X,Y,0)),
     forall(emptyAdyacent(X,Y,X1,Y1), assertz(frontier(X1, Y1))). % expand the frontier of the hive
 
 % removeBug/2
@@ -183,14 +190,21 @@ cellsAreDistinct([[X1,Y1]| R]):-
 getBug(X, Y, S, bug(P,T,X,Y,S)):- 
     bug(P,T,X,Y,S).
 
+canBeMoved(X, Y, S):- %TODO fix this to remove the connection test when moving stacked bugs
+    \+ lastPlacedBug(_,_,_,X,Y,S).
+
+canBeMoved(X, Y, S):-
+    lastPlacedBug(C1, C2, _, X, Y, S),
+    C1 == C2.
+
 opponent(C1, C2):-
     color(C1),
     color(C2),
     C1 \== C2.
-
 
 % ================================= Metrics ==========================================  
 colorWin(C):-
     opponent(C, C1),
     bug(C1, queen, X1, Y1,0),!,
     \+ emptyAdyacent(X1,Y1,_,_). 
+

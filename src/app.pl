@@ -123,7 +123,7 @@ selectBugForPlacement(Color, Type):-
 
 % Event for drawing the empty cells for placing a bug
 drawPlaceableCells(Color):-
-    clearPlaceableCells, %TODO: fix this shit
+    clearPlaceableCells,
     forall(board:placeableByColor(X1,Y1,Color), drawPlaceableCell(X1,Y1,_)).
 
 drawPlaceableCell(X, Y, Cell):-
@@ -135,13 +135,15 @@ drawPlaceableCell(X, Y, Cell):-
     assertz(drawedPlaceable(X,Y,Cell)).
 
 drawDestinationCells(C, T, X1, Y1, Cell, B):-
+    clearPlaceableCells,
     board:canBeRemoved(X1,Y1),
+    board:canBeMoved(X1, Y1, 0),
     retractall(selectedBug(_,_,_)),
     assertz(selectedBug(C, T, move)),
     write_ln(T),
-    bugs:getDestinations(X1,Y1,T),
+    bugs:getDestinations(X1,Y1,T,C),
     write_ln('here'),
-    forall(bugs:isPossibleDestination(X1,Y1,X2,Y2,T), drawDestinationCell(X1,Y1,X2,Y2,Cell,B)).
+    forall(bugs:destination(X2,Y2), drawDestinationCell(X1,Y1,X2,Y2,Cell,B)).
 
 drawDestinationCell(X1,Y1,X2,Y2,BugCell,B):-
     board(Board), % Get the resources
