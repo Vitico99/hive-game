@@ -15,35 +15,49 @@
 
 
 % getDestinations/3
-getDestinations(_,_,queen).
-getDestinations(_,_,beetle).
-getDestinations(X,Y,grasshoper):-
-    grasshoperDestinations(X,Y).
-getDestinations(_,_,spider).
-getDestinations(X,Y,ant):-
-    antDestinations(X,Y).
-getDestinations(_,_,ladybug).
+getDestinations(X,Y,grasshoper,C):-
+    board:currentColor(C),
+    forall(destination(A,B), retractall(destination(A,B))),
+    grasshoperDestinations(X,Y),
+    (overPillbugDestinations(X,Y); true).
+
+getDestinations(X,Y,ant,C):-
+    board:currentColor(C),
+    forall(destination(A,B), retractall(destination(A,B))),
+    antDestinations(X,Y),
+    (overPillbugDestinations(X,Y); true).
+
+getDestinations(X,Y,_,_):-
+    write_ln('toy aqui puta'),
+    forall(destination(A,B), retractall(destination(A,B))),
+    (overPillbugDestinations(X,Y); true).
 
 
 % isPossibleDestination/5
-isPossibleDestination(X1, Y1, X2, Y2, queen):- % Queen
+isPossibleDestination(X1, Y1, X2, Y2, queen, C):- % Queen
+    board:currentColor(C),
     board:accesibleCell(X1, Y1, X2, Y2).
 
-isPossibleDestination(X1, Y1, X2, Y2, beetle):- % Beetle
-    board:accesibleCell(X1,Y1,X2,Y2);
-    board:nonEmptyAdyacent(X1,Y1,X2,Y2).
+isPossibleDestination(X1, Y1, X2, Y2, beetle, C):- % Beetle
+    board:currentColor(C),
+    (board:accesibleCell(X1,Y1,X2,Y2);
+    board:nonEmptyAdyacent(X1,Y1,X2,Y2)).
 
-isPossibleDestination(_, _, X2, Y2, grasshoper):- % Grasshoper
-    destination(X2,Y2).
-
-isPossibleDestination(X1, Y1, X2, Y2, spider):- % Spider
+isPossibleDestination(X1, Y1, X2, Y2, spider, C):- % Spider
+    board:currentColor(C),
     spiderDestination(X1, Y1, X2, Y2).
 
-isPossibleDestination(_, _, X2, Y2, ant):- % Ant
-    destination(X2,Y2).
 
-isPossibleDestination(X1, Y1, X2, Y2, ladybug):- % Ladybug
+isPossibleDestination(X1, Y1, X2, Y2, ladybug, C):- % Ladybug
+    board:currentColor(C),
     ladybugDestination(X1, Y1, X2, Y2).
+
+isPossibleDestination(X1, Y1, X2, Y2, pigbull, C):-
+    board:currentColor(C),
+    board:accesibleCell(X1, Y1, X2, Y2).
+
+isPossibleDestination(_, _, X2, Y2, _, _):- % Ant
+    destination(X2,Y2).
 
 % ============================== Implemenation =================================
 % Implementation of more complex moves generators
@@ -51,7 +65,6 @@ isPossibleDestination(X1, Y1, X2, Y2, ladybug):- % Ladybug
 % Grasshoper
 
 grasshoperDestinations(X, Y):-
-    forall(destination(A,B), retract(destination(A,B))),
     forall(board:nonEmptyAdyacent(X, Y, X1, Y1), grasshoperVisit(X, Y, X1, Y1)).
 
 grasshoperVisit(_,_,X2,Y2):-
@@ -82,7 +95,6 @@ spiderToVisit(Sx,Sy,X1,Y1,X2,Y2):-
 % Ant
 
 antDestinations(X, Y):-
-    forall(destination(A,B), retract(destination(A,B))),
     antVisit(X, Y ,X , Y),
     retract(destination(X,Y)).
 
@@ -123,12 +135,36 @@ selectPiecesToMove(Px,Py,Lx,Ly, X, Y):-
     board:nonEmptyAdyacent(Px,Py,X,Y),
     board:cellsAreDistinct(X,Y,Lx,Ly),
     board:cellNonStacked(X,Y),
-    board:canBeRemoved(X,Y),
     board:adyacent(X,Y, X1,Y1),
     board:adyacent(X,Y, X2,Y2),
-    board:adyacent(Px,Py,X1,Y1),
-    board:adyacent(Px,Py, X2,Y2),
     board:cellsAreDistinct(X1,Y1,X2,Y2),
+    board:adyacent(Px,Py,X1,Y1),
+    board:adyacent(Px,Py,X2,Y2),
     board:cellNonStacked(X1,Y1),
     board:cellNonStacked(X2,Y2).
 
+overPillbugDestinations(X,Y):-
+    % Check if (X,Y) has a friendly pigbull adyacent to it
+    board:currentColor(C1), 
+    board:adyacent(X, Y, X1, Y1), % (X1, Y1) is the location of the pigbull
+    board:bug(C1,pigbull,X1,Y1,0),
+    write_ln('encontre el pigbull'),
+
+    board:opponent(C1, C2), % Check (X,Y) is not the last piece moved by the opponent
+    \+ board:lastPlacedBug(C2,_,X,Y,_),
+
+    board:cellNonStacked(X,Y),
+
+    % search for the two common adyacents of (X,Y) and (X1, Y1)
+    board:adyacent(X1, Y1, X2, Y2), 
+    board:adyacent(X, Y, X2, Y2),
+    
+    board:adyacent(X1, Y1, X3, Y3),
+    board:adyacent(X, Y, X3, Y3),
+
+    board:cellsAreDistinct(X2,Y2,X3,Y3),
+
+    board:cellNonStacked(X2,Y2),
+    board:cellNonStacked(X3,Y3),
+
+    forall(board:emptyAdyacent(X1,Y1,X4,Y4), assertz(destination(X4,Y4))).

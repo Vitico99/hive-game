@@ -10,6 +10,8 @@
 :- dynamic availableBug/3. %availableBug(C, T, Cnt) there is Cnt bugs of type T and color C that can be placed
 
 :- dynamic visited/2. % visited(X,Y): cell(X,Y) has been visited by dfs.
+:- dynamic lastPlacedBug/5. % lastPlacedBug(Bug, C)
+:- dynamic opponent/2.
 
 % adyacent/4
 % Adyacent definition for an hexagonal grid
@@ -109,6 +111,9 @@ initBoard(C1, C2):-
     assertz(color(C1)), assertz(color(C2)),
     assertz(firstBug(C2)),
     assertz(currentColor(C1)),
+    assertz(opponent(C1,C2)),
+    assertz(opponent(C2,C1)),
+
 
     assertz(availableBug(C1, queen, 1)),
     assertz(availableBug(C1, beetle, 2)),
@@ -139,6 +144,7 @@ changeCurrentColor:-
 placeBug(C,T,X,Y):- 
     checkFirstBug(C),
     assertz(bug(C,T,X,Y,0)), retractall(frontier(X,Y)), 
+    retractall(lastPlacedBug(C,_,_,_,_)), assertz(lastPlacedBug(C,T,X,Y,0)),
     forall(emptyAdyacent(X,Y,X1,Y1), assertz(frontier(X1, Y1))). % expand the frontier of the hive
 
 % removeBug/2
