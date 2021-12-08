@@ -81,10 +81,20 @@ getPlaceMoves(Color,Moves):-
    findall([T,X,Y], placeMove(Color,X,Y,T),Moves1), 
    sort(Moves1,Moves).
    
+getBoardMoves(Color, Moves):-
+    findall([T,X1,Y1, X2, Y2],  boardMove(Color, X1,Y1, X2,Y2,T), Moves1),
+    sort(Moves1,Moves).
 
 placeMove(Color, X, Y, Type):-
     board:placeableByColor(X,Y,Color),
     board:placeableByColor(Color,Type).
 
-
+boardMove(Color, X1,Y1, X2, Y2, T):-
+    board:bug(Color, T, X1,Y1,_),
+    board:canBeRemoved(X1,Y1),
+    board:getCellTop(X1,Y1,S),
+    board:canBeMoved(X1,Y1, S),
+    board:bug(Color, T, X1,Y1,S),
+    bugs:getDestinations(X1,Y1,T, Color),
+    bugs:destination(X2,Y2).
 
