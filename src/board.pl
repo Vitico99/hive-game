@@ -7,6 +7,7 @@
 % Board state variables
 :- dynamic color/1.
 :- dynamic currentColor/1. 
+:- dynamic currentTurn/2.
 :- dynamic availableBug/3. %availableBug(C, T, Cnt) there is Cnt bugs of type T and color C that can be placed
 
 :- dynamic visited/2. % visited(X,Y): cell(X,Y) has been visited by dfs.
@@ -72,6 +73,22 @@ cellNonStacked(X,Y):-
     length(Stack, L),
     L =< 1.
 
+%
+placeableByColor(C,queen):-
+    availableBug(C,queen,Cnt),
+    Cnt > 0.
+
+placeableByColor(C,T):-
+    bug(C,queen,_,_,_),
+    availableBug(C,T,Cnt),
+    Cnt > 0.
+
+placeableByColor(C,T):-
+    currentTurn(C,N),
+    N < 4,
+    availableBug(C,T,Cnt),
+    Cnt > 0.
+
 % placeableByColor/3
 % Checks if a bug of Color C can be placed at cell (X,Y)
 placeableByColor(X,Y,C):- %ok
@@ -113,8 +130,8 @@ initBoard(C1, C2):-
     assertz(currentColor(C1)),
     assertz(opponent(C1,C2)),
     assertz(opponent(C2,C1)),
-
-
+    assertz(currentTurn(C1,1)),
+    assertz(currentTurn(C2,1)),
     assertz(availableBug(C1, queen, 1)),
     assertz(availableBug(C1, beetle, 2)),
     assertz(availableBug(C1, grasshoper, 3)),
@@ -146,6 +163,7 @@ placeBug(C,T,X,Y):-
     assertz(bug(C,T,X,Y,0)), retractall(frontier(X,Y)),
     currentColor(C1),
     retractall(lastPlacedBug(C1,_,_,_,_,_)), assertz(lastPlacedBug(C1,C,T,X,Y,0)),
+    updateCurrentTurn(C1),
     forall(emptyAdyacent(X,Y,X1,Y1), assertz(frontier(X1, Y1))). % expand the frontier of the hive
 
 % removeBug/2
@@ -166,6 +184,12 @@ checkFirstBug(C):-
 
 checkFirstBug(C):-
     retract(firstBug(C)).
+
+updateCurrentTurn(C):-
+    currentTurn(C,N),
+    N1 is N + 1,
+    retract(currentTurn(C,N)),
+    assertz(currentTurn(C,N1)).
 
 % ================================= Utills ==========================================    
 
@@ -191,9 +215,13 @@ getBug(X, Y, S, bug(P,T,X,Y,S)):-
     bug(P,T,X,Y,S).
 
 canBeMoved(X, Y, S):- %TODO fix this to remove the connection test when moving stacked bugs
+    bug(C,_,X,Y,S),
+    bug(C,queen,_,_,_),
     \+ lastPlacedBug(_,_,_,X,Y,S).
 
 canBeMoved(X, Y, S):-
+    bug(C, _, X, Y, S),
+    bug(C, queen, _, _, _),
     lastPlacedBug(C1, C2, _, X, Y, S),
     C1 == C2.
 
