@@ -57,29 +57,25 @@ eval(Color, -10000):- board:opponent(Color, C1), board:colorWin(C1),!.
 
 eval(Color, Score):-
     board:opponent(Color, Ecolor),
-    queenSurrounded(Color, QsC1),
-    QsC is QsC1 * -1,
-    queenSurrounded(Ecolor, QsE),
 
-    piecesPinned(Color, PpC1),
-    PpC is PpC1 * -1,
+    queenSurrounded(Color, QsC),
+    queenSurrounded(Ecolor, QsE),
+    QsMetric is QsE - QsC,
+
+    piecesPinned(Color, PpC),
     piecesPinned(Ecolor, PpE),
+    PpMetric is PpE - PpC,
     
     piecesMoves(Color, PmC),
-    piecesMoves(Ecolor, PmE1),
-    PmE is PmE1 * -1,
+    piecesMoves(Ecolor, PmE),
+    PmMetric is PmC - PmE,
 
     metric_weight(queenSurrounded, QS),
     metric_weight(piecesPinned, PP),
     metric_weight(piecesMoves, PM),
-    write([QsC,QsE, PpC,PpE, PmC, PmE]),
-    scalar_product([QS,QS,PP,PP,PM,PM],[QsC,QsE, PpC,PpE, PmC, PmE],#=,Score).
+    scalar_product([QS,PP,PM],[QsMetric, PpMetric, PmMetric],#=,Score).
     
 
 
 
 % =================================Minimax========================================== 
-
-
-
-
