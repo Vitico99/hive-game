@@ -259,9 +259,34 @@ setFrontier(X,Y):-
 setFrontier(X,Y):-
     assertz(frontier(X,Y)).
 
+saveBoard(Bugs, Frontier, CurrentColor, CurrentTurn, AvailableBugs,LastPlacedBug ):-
+    findall(bug(C,T,X,Y,S), bug(C,T,X,Y,S), Bugs),
+    findall(frontier(X1,Y1), frontier(X1,Y1), Frontier),
+    currentColor(CurrentColor),
+    findall(currentTurn(X2,Y2), currentTurn(X2,Y2), CurrentTurn),
+    findall(availableBug(C1,T1,Cnt), availableBug(C1,T1,Cnt), AvailableBugs),
+    findall( lastPlacedBug(C1,C, T,X,Y,S), lastPlacedBug(C1,C,T,X,Y,S), LastPlacedBug).
+
+loadBoard(Bugs, Frontier, CurrentColor, CurrentTurn, AvailableBugs,LastPlacedBug ):-
+    retractall(bug(_,_,_,_,_)),
+    retractall(frontier(_,_)),
+    retractall(currentColor(_)),
+    retractall(currentTurn(_,_)),
+    retractall(availableBug(_,_,_)),
+    retractall(lastPlacedBug(_,_,_,_,_,_)),
+    assertzList(Bugs),
+    assertzList(Frontier),
+    assertz(currentColor(CurrentColor)),
+    assertzList(CurrentTurn),
+    assertzList(AvailableBugs),
+    assertzList(LastPlacedBug).
+
+    
+assertzList([]).
+assertzList([H|T]):-write_ln(H), assertz(H), assertzList(T).
+
 % ================================= Metrics ==========================================  
 colorWin(C):-
     opponent(C, C1),
     bug(C1, queen, X1, Y1,0),!,
     \+ emptyAdyacent(X1,Y1,_,_). 
-
