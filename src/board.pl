@@ -69,11 +69,17 @@ accesibleCell(X1, Y1, X2, Y2):-
 % cellNonStacked/2
 % there are no stacked bugs at cell (X,Y)
 cellNonStacked(X,Y):-
-    findall(S, bug(_,_,X,Y,S), Stack),
-    length(Stack, L),
-    L =< 1.
+    getCellHeight(X,Y,H),
+    H =< 1.
 
-%
+% The height of a cell is the number of bugs stacked in the cell
+getCellHeight(X,Y,H):-
+    aggregate_all(count, bug(_,_,X,Y,_), H).
+
+getCellTop(X,Y,S):-
+    getCellHeight(X,Y,H),
+    S is H-1.
+
 placeableByColor(C,queen):-
     availableBug(C,queen,Cnt),
     Cnt > 0.
@@ -160,18 +166,22 @@ changeCurrentColor:-
 % placeBug/4
 placeBug(C,T,X,Y):- 
     checkFirstBug(C),
-    assertz(bug(C,T,X,Y,0)), retractall(frontier(X,Y)),
+    getCellHeight(X,Y,H),
+    assertz(bug(C,T,X,Y,H)), retractall(frontier(X,Y)),
     currentColor(C1),
-    retractall(lastPlacedBug(C1,_,_,_,_,_)), assertz(lastPlacedBug(C1,C,T,X,Y,0)),
+    retractall(lastPlacedBug(C1,_,_,_,_,_)), assertz(lastPlacedBug(C1,C,T,X,Y,H)),
     updateCurrentTurn(C1),
     forall(emptyAdyacent(X,Y,X1,Y1), assertz(frontier(X1, Y1))). % expand the frontier of the hive
 
 % removeBug/2
 removeBug(X,Y):- % Remove Position X,Y. Assumes there is only one bug in cell.
-    getBug(X,Y,0,Bug),
+    getCellTop(X,Y,S),
+    getBug(X,Y,S,Bug),
     forall(isolatedEmptyAdyacent(X,Y,X1,Y1), retractall(frontier(X1,Y1))),
     retract(Bug),
+    S == 0,
     assertz(frontier(X,Y)).
+removeBug(_,_).
 
 % updateBugCount/2
 updateBugCount(C,T):-

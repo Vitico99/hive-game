@@ -38,6 +38,8 @@ app():-
     new(Menu, dialog_group('Main Menu')),
     new(BlackPieces, dialog_group('Black')),
     new(WhitePieces, dialog_group('White')),
+    new(StatusBar, dialog_group('Game Status')),
+    new(@sview, dialog_group('Stack Viewer')),
 
     %Main Menu
     new(Opponent, menu(opponent)),
@@ -48,6 +50,17 @@ app():-
 
     board:initBoard(white, black),
     
+    % Status bar
+    new(@sbar, picture('Sbar', size(260, 70))),
+    send(@sbar, background, colour(gray)),
+    drawStatusBar(@sbar),
+    send(StatusBar, append, @sbar),
+
+    % StackViewer
+    new(@svCanvas, picture('Sview', size(260, 70))),
+    send(@svCanvas, background, colour(gray)),
+    send(@sview, append, @svCanvas),
+
     %Black Pieces
     drawPieceSelection(black, BCanvas),
     send(BlackPieces, append, BCanvas),
@@ -58,10 +71,10 @@ app():-
 
     %Right Panel
     send(RightPanel, append, Menu),
+    send(RightPanel, append, StatusBar),
     send(RightPanel, append, BlackPieces),
     send(RightPanel, append, WhitePieces),
-    
-    %initialization
+    send(RightPanel, append, @sview),
 
 
     send(Board, background, colour(gray)),
@@ -71,9 +84,15 @@ app():-
     send(Window, append, RightPanel, right),
     send(Window, open).
 
+drawStatusBar(Canvas):-
+    send(Canvas, display, new(@currentColorBox, box(10,10)), point(10,10)),
+    send(@currentColorBox, fill_pattern, colour(white)),
+    send(Canvas, display, new(text('player\'s turn')), point(30, 5)),
+    send(Canvas, display, new(text('Selected cell:')), point(10, 30)).
+
 drawPieceSelection(Color, Canvas):-
     title(Color, T),
-    new(Canvas, picture(T, size(260, 220))),
+    new(Canvas, picture(T, size(260, 180))),
     send(Canvas, background, colour(gray)),
 
     % get resources
@@ -84,11 +103,11 @@ drawPieceSelection(Color, Canvas):-
     drawPiece(Canvas, Color, queen, 40, 30),
     drawPiece(Canvas, Color, beetle, 115, 30),
     drawPiece(Canvas, Color, grasshoper, 190, 30),
-    drawPiece(Canvas, Color, spider, 40, 105),
-    drawPiece(Canvas, Color, ant, 115, 105),
-    drawPiece(Canvas, Color, ladybug, 190, 105),
-    drawPiece(Canvas, Color, mosquito, 40, 180),
-    drawPiece(Canvas, Color, pigbull, 115, 180).
+    drawPiece(Canvas, Color, spider, 40, 85),
+    drawPiece(Canvas, Color, ant, 115, 85),
+    drawPiece(Canvas, Color, ladybug, 190, 85),
+    drawPiece(Canvas, Color, mosquito, 40, 140),
+    drawPiece(Canvas, Color, pigbull, 115, 140).
    
 drawPiece(Canvas, Color, Type, X, Y):-
     bm(Color, Type, Bm),
@@ -120,6 +139,7 @@ selectBugForPlacement(Color, Type):-
     board:placeableByColor(Color, Type),
     retractall(selectedBug(_,_,_)),
     assertz(selectedBug(Color, Type, place)),
+    updateSelectedCell,
     drawPlaceableCells(Color).
 
 
@@ -142,9 +162,9 @@ drawDestinationCells(C, T, X1, Y1, Cell, B):-
     board:canBeMoved(X1, Y1, 0),
     retractall(selectedBug(_,_,_)),
     assertz(selectedBug(C, T, move)),
+    updateSelectedCell,
     write_ln(T),
     bugs:getDestinations(X1,Y1,T,C),
-    write_ln('here'),
     forall(bugs:destination(X2,Y2), drawDestinationCell(X1,Y1,X2,Y2,Cell,B)).
 
 drawDestinationCell(X1,Y1,X2,Y2,BugCell,B):-
@@ -165,13 +185,13 @@ moveBug(X1,Y1,X2,Y2,BugCell, B):-
 
 drawBugCell(X, Y):- %add another mode like place/move to use the line that updates the counter
     selectedBug(C, T, _), % Get the bug that is going to be drawn
-    write_ln('voa pintar'),
     board(Board), bm(C, T, Bm), % Get the resources
     translate(X,Y,X1,Y1),
     hexagon(X1,Y1,Cell,C),
     new(B, bitmap(Bm)),
     send(Board, display, Cell),
     send(Cell, recogniser, click_gesture(left, '', single, message(@prolog, drawDestinationCells, C, T, X, Y, Cell, B))),
+    send(Cell, recogniser, click_gesture(right, '', single, message(@prolog, drawStack, X, Y))),
     send(Board, display, B, point(X1-21, Y1-12)),
     board:placeBug(C,T,X,Y),
     (   %if we draw a bug that was moved then we don't need to update the counters
@@ -179,7 +199,34 @@ drawBugCell(X, Y):- %add another mode like place/move to use the line that updat
         (board:updateBugCount(C,T), updateCounter(C,T))
     ),
     board:changeCurrentColor,
+    updateCurrentColorBox,
     clearPlaceableCells.
+
+drawStack(X,Y):-
+    send(@svCanvas, clear),
+    forall(board:bug(C,T,X,Y,S),  drawStackedCell(C,T,S)).
+
+drawStackedCell(C,T,S):-
+    X is 30 + 60 * S,
+    hexagon(X, 30, H, C),
+    bm(C,T,Bm),
+    new(B, bitmap(Bm)),
+    send(@svCanvas, display, H),
+    send(@svCanvas, display, B, point(X-21, 18)).
+
+
+updateSelectedCell:-
+    selectedBug(Color, Type, _),
+    hexagon(130,35,H,Color),
+    send(@sbar, display, H),
+    bm(Color,Type, Bm),
+    new(B, bitmap(Bm)),
+    send(@sbar, display, B, point(109,23)).
+
+
+updateCurrentColorBox:-
+    board:currentColor(C),
+    send(@currentColorBox, fill_pattern, colour(C)). 
 
 clearPlaceableCells():-
     forall(drawedPlaceable(X,Y,Cell), clearPlaceableCell(X,Y,Cell)).
