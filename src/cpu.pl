@@ -74,8 +74,17 @@ eval(Color, Score):-
     metric_weight(piecesPinned, PP),
     metric_weight(piecesMoves, PM),
     scalar_product([QS,PP,PM],[QsMetric, PpMetric, PmMetric],#=,Score).
-    
-
-
 
 % =================================Minimax========================================== 
+
+getPlaceMoves(Color,Moves):-
+   findall([T,X,Y], placeMove(Color,X,Y,T),Moves1), 
+   sort(Moves1,Moves).
+   
+
+placeMove(Color, X, Y, Type):-
+    board:placeableByColor(X,Y,Color),
+    board:placeableByColor(Color,Type).
+
+
+
