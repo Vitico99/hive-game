@@ -58,21 +58,29 @@ isolatedEmptyAdyacent(X1, Y1, X2, Y2):- % X2, Y2 is only adyacent to X1,Y1
     emptyAdyacent(X1,Y1,X2,Y2),
     isIsolated(X2,Y2).
 
-% accesibleCell/4
-accesibleCell(X1, Y1, X2, Y2):-
+commonAdyacent(X1,Y1,X2,Y2,X3,Y3):-
+    adyacent(X1,Y1,X3,Y3),
+    adyacent(X2,Y2,X3,Y3).
+
+commonEmptyAdyacent(X1,Y1,X2,Y2,X3,Y3):-
+    commonAdyacent(X1,Y1,X2,Y2,X3,Y3),
+    empty(X3,Y3).
+    
+
+accesibleCell(X1,Y1,X2,Y2):-
+    \+empty(X1,Y1),
     frontierAdyacent(X1,Y1,X2,Y2),
-    emptyAdyacent(X2,Y2, X3,Y3),
-    emptyAdyacent(X1, Y1, X3,Y3),    
-    nonEmptyAdyacent(X2,Y2, X4,Y4),
-    cellsAreDistinct(X1,Y1, X4,Y4).
+    aggregate_all(count, commonEmptyAdyacent(X1,Y1,X2,Y2,_,_), C1), C1 > 0,
+    aggregate_all(count, nonEmptyAdyacent(X2,Y2,_,_), C2), C2 > 1.
+
+accesibleCell(X1,Y1,X2,Y2):-
+    empty(X1,Y1),
+    frontierAdyacent(X1,Y1,X2,Y2),
+    aggregate_all(count, commonEmptyAdyacent(X1,Y1,X2,Y2,_,_), C1), C1 > 0,
+    aggregate_all(count, nonEmptyAdyacent(X2,Y2,_,_), C2), C2 > 0.
 
 % cellNonStacked/2
 % there are no stacked bugs at cell (X,Y)
-% cellNonStacked(X,Y):-
-%     findall(S, bug(_,_,X,Y,S), Stack),
-%     length(Stack, L),
-%     L =< 1.
-
 cellNonStacked(X,Y):-
     getCellHeight(X,Y,H),
     H =< 1.
@@ -85,7 +93,6 @@ getCellTop(X,Y,S):-
     getCellHeight(X,Y,H),
     S is H-1.
 
-%
 placeableByColor(C,queen):-
     availableBug(C,queen,Cnt),
     Cnt > 0.
@@ -173,20 +180,20 @@ changeCurrentColor:-
 placeBug(C,T,X,Y):- 
     checkFirstBug(C),
     getCellHeight(X,Y,H),
-    assertz(bug(C,T,X,Y,H)), retractall(frontier(X,Y)),
+    assertz(bug(C,T,X,Y,H)), retract(frontier(X,Y)),
     currentColor(C1),
     retractall(lastPlacedBug(C1,_,_,_,_,_)), assertz(lastPlacedBug(C1,C,T,X,Y,H)),
     updateCurrentTurn(C1),
-    forall(emptyAdyacent(X,Y,X1,Y1), assertz(frontier(X1, Y1))). % expand the frontier of the hive
+    forall(emptyAdyacent(X,Y,X1,Y1), setFrontier(X1,Y1)). % expand the frontier of the hive
 
 % removeBug/2
 removeBug(X,Y):- % Remove Position X,Y. Assumes there is only one bug in cell.
     getCellTop(X,Y,S),
     getBug(X,Y,S,Bug),
-    forall(isolatedEmptyAdyacent(X,Y,X1,Y1), retractall(frontier(X1,Y1))),
+    forall(isolatedEmptyAdyacent(X,Y,X1,Y1), retract(frontier(X1,Y1))),
     retract(Bug),
     S == 0,
-    assertz(frontier(X,Y)).
+    setFrontier(X,Y).
 removeBug(_,_).
 
 % updateBugCount/2
@@ -245,6 +252,12 @@ opponent(C1, C2):-
     color(C1),
     color(C2),
     C1 \== C2.
+
+setFrontier(X,Y):-
+    frontier(X,Y).
+
+setFrontier(X,Y):-
+    assertz(frontier(X,Y)).
 
 % ================================= Metrics ==========================================  
 colorWin(C):-

@@ -63,34 +63,33 @@ grasshoperVisit(X1,Y1,X2,Y2):-
 % Spider
 
 spiderDestinations(X, Y):-
-    forall(spiderDestination(X,Y,X1,Y1), assertz(destination(X1,Y1))).
+    board:bug(C,spider,X,Y,S), retract(board:bug(C,spider,X,Y,S)),
+    forall(spiderDestination(X,Y,X1,Y1), assertz(destination(X1,Y1))),
+    assertz(board:bug(C,spider,X,Y,S)).
 
 spiderDestination(X1,Y1, X4, Y4):-
-    spiderToVisit(X1, Y1, X1,Y1, X2, Y2),
-    spiderToVisit(X1, Y1, X2,Y2, X3, Y3),
-    spiderToVisit(X1,Y1, X3, Y3, X4, Y4),
+    spiderToVisit(X1,Y1, X2, Y2),
+    spiderToVisit(X2,Y2, X3, Y3),
+    spiderToVisit(X3, Y3, X4, Y4),
     board:cellsAreDistinct([[X1,Y1], [X2,Y2], [X3,Y3], [X4,Y4]]).
     
-spiderToVisit(Sx,Sy,X1,Y1,X2,Y2):-
-    board:accesibleCell(X1,Y1,X2,Y2),
-    board:nonEmptyAdyacent(X2,Y2, X3, Y3),
-    board:cellsAreDistinct(Sx,Sy, X3, Y3).
+spiderToVisit(X1,Y1,X2,Y2):-
+    board:accesibleCell(X1,Y1,X2,Y2).
 
 % Ant
 
 antDestinations(X, Y):-
-    antVisit(X, Y ,X , Y),
-    retract(destination(X,Y)).
+    board:bug(C,ant,X,Y,S), retract(board:bug(C,ant,X,Y,S)),
+    antVisit(X, Y),
+    retract(destination(X,Y)), assertz(board:bug(C,ant,X,Y,S)).
 
-antVisit(Xs,Ys, Xc, Yc):-
-    assert(destination(Xc,Yc)),
-    forall(antToVisit(Xs, Ys, Xc, Yc, X1, Y1), antVisit(Xs, Ys, X1, Y1)).
+antVisit(X, Y):-
+    assertz(destination(X,Y)),
+    forall(antToVisit(X,Y,X1,Y1), antVisit(X1,Y1)).
 
-antToVisit(Sx,Sy, X1, Y1, X2, Y2):-
+antToVisit(X1, Y1, X2, Y2):-
     board:accesibleCell(X1,Y1,X2,Y2),
-    \+ destination(X2, Y2),
-    board:nonEmptyAdyacent(X2,Y2, X3,Y3),
-    board:cellsAreDistinct(Sx,Sy, X3, Y3).
+    \+ destination(X2,Y2).
 
 % Ladybug
 
