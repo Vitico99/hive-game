@@ -30,6 +30,11 @@ bugDestinations(X,Y,ant):- antDestinations(X,Y).
 bugDestinations(X,Y,ladybug):- ladybugDestinations(X,Y).
 bugDestinations(X,Y,pigbull):- pigbullDestinations(X,Y).
 
+countDestinations(X,Y, T, Count):-
+    forall(destination(A,B), retractall(destination(A,B))),
+    bugDestinations(X,Y,T),
+    aggregate_all(count,destination(_,_), Count).
+
 % ============================== Implemenation =================================
 
 % Queen
