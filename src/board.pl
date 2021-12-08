@@ -58,13 +58,26 @@ isolatedEmptyAdyacent(X1, Y1, X2, Y2):- % X2, Y2 is only adyacent to X1,Y1
     emptyAdyacent(X1,Y1,X2,Y2),
     isIsolated(X2,Y2).
 
-% accesibleCell/4
-accesibleCell(X1, Y1, X2, Y2):-
+commonAdyacent(X1,Y1,X2,Y2,X3,Y3):-
+    adyacent(X1,Y1,X3,Y3),
+    adyacent(X2,Y2,X3,Y3).
+
+commonEmptyAdyacent(X1,Y1,X2,Y2,X3,Y3):-
+    commonAdyacent(X1,Y1,X2,Y2,X3,Y3),
+    empty(X3,Y3).
+    
+
+accesibleCell(X1,Y1,X2,Y2):-
+    \+empty(X1,Y1),
     frontierAdyacent(X1,Y1,X2,Y2),
-    emptyAdyacent(X2,Y2, X3,Y3),
-    emptyAdyacent(X1, Y1, X3,Y3),    
-    nonEmptyAdyacent(X2,Y2, X4,Y4),
-    cellsAreDistinct(X1,Y1, X4,Y4).
+    aggregate_all(count, commonEmptyAdyacent(X1,Y1,X2,Y2,_,_), C1), C1 > 0,
+    aggregate_all(count, nonEmptyAdyacent(X2,Y2,_,_), C2), C2 > 1.
+
+accesibleCell(X1,Y1,X2,Y2):-
+    empty(X1,Y1),
+    frontierAdyacent(X1,Y1,X2,Y2),
+    aggregate_all(count, commonEmptyAdyacent(X1,Y1,X2,Y2,_,_), C1), C1 > 0,
+    aggregate_all(count, nonEmptyAdyacent(X2,Y2,_,_), C2), C2 > 0.
 
 % cellNonStacked/2
 % there are no stacked bugs at cell (X,Y)
