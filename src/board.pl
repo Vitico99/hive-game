@@ -192,7 +192,7 @@ placeBug(C,T,X,Y):-
 removeBug(X,Y):- % Remove Position X,Y. Assumes there is only one bug in cell.
     getCellTop(X,Y,S),
     getBug(X,Y,S,Bug),
-    forall(isolatedEmptyAdyacent(X,Y,X1,Y1), retract(frontier(X1,Y1))),
+    forall(isolatedEmptyAdyacent(X,Y,X1,Y1), unsetFrontier(X1,Y1)),
     retract(Bug),
     S == 0,
     setFrontier(X,Y).
@@ -264,7 +264,7 @@ setFrontier(X,Y):-
 unsetFrontier(X,Y):-
     frontier(X,Y),
     retract(frontier(X,Y)).
-unsetFrontier(X,Y).
+unsetFrontier(_,_).
 
 % ================================= Metrics ==========================================  
 colorWin(C):-
