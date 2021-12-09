@@ -115,7 +115,7 @@ mosquitoDestinations(X,Y,0):-
     forall(mosquitoDestination(X1,Y1), retract(mosquitoDestination(X1,Y1))),
     forall(mosquitoTarget(X,Y,T), mosquitoCopyBug(X,Y,T)),
     forall(mosquitoDestination(X2,Y2), assertz(destination(X2,Y2))).
-mosquitoDestinations(X,Y,S):-
+mosquitoDestinations(X,Y,_):-
     beetleDestinations(X,Y).
 
 mosquitoTarget(X,Y,T):-
@@ -123,13 +123,15 @@ mosquitoTarget(X,Y,T):-
     board: getCellTop(X1,Y1,S),
     board: bug(_,T,X1,Y1,S).
 
-mosquitoCopyBug(X,Y,mosquito).
+mosquitoCopyBug(_,_,mosquito).
 mosquitoCopyBug(X,Y,T):-
     \+ mosquitoCopied(T),
     forall(destination(A,B), retract(destination(A,B))),
     bugDestinations(X,Y,T),
     forall(destination(X1,Y1), assertz(mosquitoDestination(X1,Y1))),
     assertz(mosquitoCopied(T)).
+mosquitoCopyBug(_,_,T):-
+    mosquitoCopied(T).
 
 % Pigbull
 
@@ -140,7 +142,8 @@ overPillbugDestinations(X,Y):-
     % Check if (X,Y) has a friendly pigbull adyacent to it
     board:currentColor(C1), 
     board:adyacent(X, Y, X1, Y1), % (X1, Y1) is the location of the pigbull
-    board:bug(C1,pigbull,X1,Y1,0),
+    %board:bug(C1,pigbull,X1,Y1,0),
+    isPigbullLike(X1,Y1,C1),
 
     board:opponent(C1, C2), % Check (X,Y) is not the last piece moved by the opponent
     \+ board:lastPlacedBug(C2,_,_,X,Y,_),
@@ -152,7 +155,7 @@ overPillbugDestinations(X,Y):-
     board:adyacent(X, Y, X2, Y2),
     
     board:adyacent(X1, Y1, X3, Y3),
-    board:adyacent(X, Y, X3, Y3),
+    board:adyacent(X, Y, X3, Y3), 
 
     board:cellsAreDistinct(X2,Y2,X3,Y3),
 
@@ -160,3 +163,9 @@ overPillbugDestinations(X,Y):-
     board:cellNonStacked(X3,Y3),
 
     forall(board:emptyAdyacent(X1,Y1,X4,Y4), assertz(destination(X4,Y4))).
+
+isPigbullLike(X,Y,C):-
+    board:bug(C,pigbull,X,Y,0).
+isPigbullLike(X,Y,C):-
+    board:bug(C,mosquito,X,Y,0),
+    mosquitoTarget(X,Y,pigbull).
