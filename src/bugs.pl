@@ -3,7 +3,8 @@
 
 :- dynamic getDestinations/4.
 :- dynamic destination/2.
-
+:- dynamic mosquitoDestination/2.
+:- dynamic mosquitoCopied/1.
 
 % ================================= API ====================================
 % This section provides two predicates to obtain the possible moves for a bug:
@@ -29,6 +30,7 @@ bugDestinations(X,Y,spider):- spiderDestinations(X,Y).
 bugDestinations(X,Y,ant):- antDestinations(X,Y).
 bugDestinations(X,Y,ladybug):- ladybugDestinations(X,Y).
 bugDestinations(X,Y,pigbull):- pigbullDestinations(X,Y).
+bugDestinations(X,Y,mosquito):- mosquitoDestinations(X,Y).
 
 % ============================== Implemenation =================================
 
@@ -79,9 +81,9 @@ spiderToVisit(X1,Y1,X2,Y2):-
 % Ant
 
 antDestinations(X, Y):-
-    board:bug(C,ant,X,Y,S), retract(board:bug(C,ant,X,Y,S)),
+    board:bug(C,T,X,Y,S), retract(board:bug(C,T,X,Y,S)),
     antVisit(X, Y),
-    retract(destination(X,Y)), assertz(board:bug(C,ant,X,Y,S)).
+    retract(destination(X,Y)), assertz(board:bug(C,T,X,Y,S)).
 
 antVisit(X, Y):-
     assertz(destination(X,Y)),
@@ -101,6 +103,33 @@ ladybugDestination(X1,Y1,X4, Y4):-
     board: nonEmptyAdyacent(X2,Y2, X3,Y3),
     board: frontierAdyacent(X3,Y3, X4,Y4),
     board: cellsAreDistinct([[X1,Y1],[X2,Y2], [X3,Y3], [X4,Y4]]).
+
+% Mosquito
+
+mosquitoDestinations(X,Y):-
+    board: getCellTop(X,Y,S),
+    forall(mosquitoCopied(T), retract(mosquitoCopied(T))),
+    mosquitoDestinations(X,Y,S).
+
+mosquitoDestinations(X,Y,0):-
+    forall(mosquitoDestination(X1,Y1), retract(mosquitoDestination(X1,Y1))),
+    forall(mosquitoTarget(X,Y,T), mosquitoCopyBug(X,Y,T)),
+    forall(mosquitoDestination(X2,Y2), assertz(destination(X2,Y2))).
+mosquitoDestinations(X,Y,S):-
+    beetleDestinations(X,Y).
+
+mosquitoTarget(X,Y,T):-
+    board: nonEmptyAdyacent(X,Y,X1,Y1),
+    board: getCellTop(X1,Y1,S),
+    board: bug(_,T,X1,Y1,S).
+
+mosquitoCopyBug(X,Y,mosquito).
+mosquitoCopyBug(X,Y,T):-
+    \+ mosquitoCopied(T),
+    forall(destination(A,B), retract(destination(A,B))),
+    bugDestinations(X,Y,T),
+    forall(destination(X1,Y1), assertz(mosquitoDestination(X1,Y1))),
+    assertz(mosquitoCopied(T)).
 
 % Pigbull
 
