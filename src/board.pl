@@ -123,6 +123,8 @@ placeableByColor(X,Y,C):- % Edge case of the first bug of the second player
 % Checks if a bug at cell (X,Y) can be removed from the hive
 % A bug can be removed if and only if the hive remains connected without the bug.
 canBeRemoved(X, Y):-
+    getCellHeight(X,Y,H), H > 1.
+canBeRemoved(X, Y):-
     nonEmptyAdyacent(X,Y,X2,Y2), assertz(visited(X,Y)),
     visit(X2, Y2),
     findall([X3, Y3], visited(X3,Y3), AllVisited),
@@ -180,7 +182,7 @@ changeCurrentColor:-
 placeBug(C,T,X,Y):- 
     checkFirstBug(C),
     getCellHeight(X,Y,H),
-    assertz(bug(C,T,X,Y,H)), retract(frontier(X,Y)),
+    assertz(bug(C,T,X,Y,H)), unsetFrontier(X,Y),
     currentColor(C1),
     retractall(lastPlacedBug(C1,_,_,_,_,_)), assertz(lastPlacedBug(C1,C,T,X,Y,H)),
     updateCurrentTurn(C1),
@@ -190,7 +192,7 @@ placeBug(C,T,X,Y):-
 removeBug(X,Y):- % Remove Position X,Y. Assumes there is only one bug in cell.
     getCellTop(X,Y,S),
     getBug(X,Y,S,Bug),
-    forall(isolatedEmptyAdyacent(X,Y,X1,Y1), retract(frontier(X1,Y1))),
+    forall(isolatedEmptyAdyacent(X,Y,X1,Y1), unsetFrontier(X1,Y1)),
     retract(Bug),
     S == 0,
     setFrontier(X,Y).
@@ -259,9 +261,15 @@ setFrontier(X,Y):-
 setFrontier(X,Y):-
     assertz(frontier(X,Y)).
 
+unsetFrontier(X,Y):-
+    frontier(X,Y),
+    retract(frontier(X,Y)).
+unsetFrontier(_,_).
+
 % ================================= Metrics ==========================================  
 colorWin(C):-
     opponent(C, C1),
     bug(C1, queen, X1, Y1,0),!,
     \+ emptyAdyacent(X1,Y1,_,_). 
 
+  
