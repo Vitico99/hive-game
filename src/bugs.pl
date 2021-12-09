@@ -65,9 +65,9 @@ grasshoperVisit(X1,Y1,X2,Y2):-
 % Spider
 
 spiderDestinations(X, Y):-
-    board:bug(C,spider,X,Y,S), retract(board:bug(C,spider,X,Y,S)),
+    board:bug(C,T,X,Y,0), retract(board:bug(C,T,X,Y,0)),
     forall(spiderDestination(X,Y,X1,Y1), assertz(destination(X1,Y1))),
-    assertz(board:bug(C,spider,X,Y,S)).
+    assertz(board:bug(C,T,X,Y,0)).
 
 spiderDestination(X1,Y1, X4, Y4):-
     spiderToVisit(X1,Y1, X2, Y2),
