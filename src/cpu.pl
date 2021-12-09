@@ -107,18 +107,18 @@ minimize(Color, Score, Move):-
     board:opponent(Color,C),
     getPlaceMoves(C, PlaceMoves),
     % getBoardMoves(C, BoardMoves),
-    board:saveBoard(Bugs, Frontier, CurrentColor, CurrentTurn, AvailableBugs,LastPlacedBug ),
+    board:saveBoard(Bugs, Frontier, CurrentColor, CurrentTurn, AvailableBugs,LastPlacedBug, FirstBug ),
     minimizePlaceMove(Color, PlaceMoves, Score, Move),!,
-    board:loadBoard(Bugs, Frontier, CurrentColor, CurrentTurn, AvailableBugs,LastPlacedBug ).
+    board:loadBoard(Bugs, Frontier, CurrentColor, CurrentTurn, AvailableBugs,LastPlacedBug, FirstBug ).
 
 minimizePlaceMove(_,[], 1000000, [-1,-1,-1]):- !, true.
 minimizePlaceMove(Color, [[T,X,Y]|R],Score, Move):-
-    board:saveBoard(Bugs, Frontier, CurrentColor, CurrentTurn, AvailableBugs,LastPlacedBug ),
+    board:saveBoard(Bugs, Frontier, CurrentColor, CurrentTurn, AvailableBugs,LastPlacedBug, FirstBug ),
     %Try the current move
     board:placeBug(CurrentColor, T, X,Y),
     board:updateBugCount(CurrentColor,T),
     eval(Color, CurrScore),
-    board:loadBoard(Bugs, Frontier, CurrentColor, CurrentTurn, AvailableBugs,LastPlacedBug),
+    board:loadBoard(Bugs, Frontier, CurrentColor, CurrentTurn, AvailableBugs,LastPlacedBug, FirstBug),
     minimizePlaceMove(Color, R, Score1, Move1),!,
     selectTheMin(CurrScore, [T,X,Y],Score1, Move1, Score, Move).
 
