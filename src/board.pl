@@ -260,12 +260,12 @@ setFrontier(X,Y):-
     assertz(frontier(X,Y)).
 
 saveBoard(Bugs, Frontier, CurrentColor, CurrentTurn, AvailableBugs,LastPlacedBug ):-
-    findall(bug(C,T,X,Y,S), bug(C,T,X,Y,S), Bugs),
-    findall(frontier(X1,Y1), frontier(X1,Y1), Frontier),
+    findall(bug(C1,T1,X1,Y1,S1), bug(C1,T1,X1,Y1,S1), Bugs),
+    findall(frontier(X2,Y2), frontier(X2,Y2), Frontier),
     currentColor(CurrentColor),
-    findall(currentTurn(X2,Y2), currentTurn(X2,Y2), CurrentTurn),
-    findall(availableBug(C1,T1,Cnt), availableBug(C1,T1,Cnt), AvailableBugs),
-    findall( lastPlacedBug(C1,C, T,X,Y,S), lastPlacedBug(C1,C,T,X,Y,S), LastPlacedBug).
+    findall(currentTurn(X3,Y3), currentTurn(X3,Y3), CurrentTurn),
+    findall(availableBug(C4,T4,Cnt4), availableBug(C4,T4,Cnt4), AvailableBugs),
+    findall( lastPlacedBug(C51,C5, T5,X5,Y5,S5), lastPlacedBug(C51,C5,T5,X5,Y5,S5), LastPlacedBug).
 
 loadBoard(Bugs, Frontier, CurrentColor, CurrentTurn, AvailableBugs,LastPlacedBug ):-
     retractall(bug(_,_,_,_,_)),
@@ -283,7 +283,7 @@ loadBoard(Bugs, Frontier, CurrentColor, CurrentTurn, AvailableBugs,LastPlacedBug
 
     
 assertzList([]).
-assertzList([H|T]):-write_ln(H), assertz(H), assertzList(T).
+assertzList([H|T]):-assertz(H), assertzList(T).
 
 % ================================= Metrics ==========================================  
 colorWin(C):-

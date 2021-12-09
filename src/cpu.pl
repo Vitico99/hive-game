@@ -5,6 +5,7 @@
 
 % ================================= Metrics ==========================================  
 
+queenSurrounded(Color, 0):- \+ board:bug(Color, queen, _,_,_).
 queenSurrounded(Color, Count):-
     board:bug(Color, queen, X1,Y1,0),
     !,
@@ -16,16 +17,21 @@ piecesPinned(Color, Count):-
     countPinnedBugs(Bugs, Count).
 
 countPinnedBugs([],0).
+countPinnedBugs([board:bug(_,_,X,Y,S)|R], Count):-
+    (\+board:canBeRemoved(X,Y);
+    \+board:canBeMoved(X,Y,S)),
+    !,
+    countPinnedBugs(R,C1), Count is C1 + 1.
+
 countPinnedBugs([board:bug(_,T,X,Y,_)|R], Count):-
-    board:canBeRemoved(X,Y),
-    bugs:isPossibleDestination(X,Y, _, _,T),
+    bugs:countDestinations(X,Y,T,Cp),
+    Cp >0,
     !,
     countPinnedBugs(R,Count).
-countPinnedBugs([board:bug(_,T,X,Y,_)|R], Count):-
-    (\+ board: canBeRemoved(X,Y);
-    \+bugs:isPossibleDestination(X,Y, _, _,T)),
-    !,
+
+countPinnedBugs([board:bug(_,_,_,_,_)|R], Count):-
     countPinnedBugs(R,C1),
+    !,
     Count is C1 +1.
 
 piecesMoves(Color, Count):-
@@ -33,18 +39,16 @@ piecesMoves(Color, Count):-
     countMoves(Bugs, Count).
 
 countMoves([],0).
-countMoves([board:bug(_,T,X,Y,_)|R], Count):-
-    board:canBeRemoved(X,Y),
-    !,
-    findall([X1,Y1], bugs:isPossibleDestination(X,Y,X1,Y1,T),Moves),
-    countMoves(R,C1),
-    length(Moves,Cm),
-    Count is Cm + C1.
-
-countMoves([board:bug(_,_,X,Y,_)|R], Count):-
-    \+ board:canBeRemoved(X,Y),
+countMoves([board:bug(_,_,X,Y,S)|R], Count):-
+    (\+board:canBeRemoved(X,Y);
+    \+board:canBeMoved(X,Y,S)),
     !,
     countMoves(R,Count).
+countMoves([board:bug(_,T,X,Y,_)|R], Count):-
+    bugs:countDestinations(X,Y,T,Cm),
+    !,
+    countMoves(R,Cr),
+    Count is Cm + Cr.
 
 % ================================= Eval Function==========================================  
 
@@ -97,4 +101,28 @@ boardMove(Color, X1,Y1, X2, Y2, T):-
     board:bug(Color, T, X1,Y1,S),
     bugs:getDestinations(X1,Y1,T, Color),
     bugs:destination(X2,Y2).
+
+
+minimize(Color, Score, Move):-
+    board:opponent(Color,C),
+    getPlaceMoves(C, PlaceMoves),
+    % getBoardMoves(C, BoardMoves),
+    board:saveBoard(Bugs, Frontier, CurrentColor, CurrentTurn, AvailableBugs,LastPlacedBug ),
+    minimizePlaceMove(Color, PlaceMoves, Score, Move),!,
+    board:loadBoard(Bugs, Frontier, CurrentColor, CurrentTurn, AvailableBugs,LastPlacedBug ).
+
+minimizePlaceMove(_,[], 1000000, [-1,-1,-1]):- !, true.
+minimizePlaceMove(Color, [[T,X,Y]|R],Score, Move):-
+    board:saveBoard(Bugs, Frontier, CurrentColor, CurrentTurn, AvailableBugs,LastPlacedBug ),
+    %Try the current move
+    board:placeBug(CurrentColor, T, X,Y),
+    board:updateBugCount(CurrentColor,T),
+    eval(Color, CurrScore),
+    board:loadBoard(Bugs, Frontier, CurrentColor, CurrentTurn, AvailableBugs,LastPlacedBug),
+    minimizePlaceMove(Color, R, Score1, Move1),!,
+    selectTheMin(CurrScore, [T,X,Y],Score1, Move1, Score, Move).
+
+selectTheMin(S1, [T1,X1,Y1], S2, [_,_,_], S1, [T1,X1,Y1]):- S1 < S2, !.
+selectTheMin(S1, [_,_,_], S2, [T2,X2,Y2], S2, [T2,X2,Y2]):- S1 >= S2, !.
+
 
