@@ -5,6 +5,9 @@
 
 :- dynamic selectedBug/3.
 :- dynamic drawedPlaceable/3.
+:- dynamic opponent/1.
+:- dynamic cpuColor/1.
+:- dynamic counter/6.
 
 % Resources 45x25px
 bm(black, queen, './xpm/BQ.xpm').
@@ -33,7 +36,7 @@ title(black, 'Black Pieces').
 
 app():-
     new(Window, dialog('Hive')),
-    new(Board, picture('Board', size(900, 780))),
+    new(@boardCanvas, picture('Board', size(900, 780))),
     new(RightPanel, dialog_group(' ')),
     new(Menu, dialog_group('Main Menu')),
     new(BlackPieces, dialog_group('Black')),
@@ -45,15 +48,17 @@ app():-
     new(Opponent, menu(opponent)),
     send_list(Opponent, append, [computer, human]),
     send(Menu, append, Opponent),
-    send(Menu, append, button(newGame, message(@prolog, drawPlaceableCells, black))),
+    send(Menu, append, button(newGame, message(@prolog, startNewGame, Opponent?selection))),
     send(Menu, append, button(erase, message(@prolog, clearPlaceableCells))),
 
-    board:initBoard(white, black),
+    %board:initBoard(white, black),
+    %assertz(opponent(cpu)),
+    %assertz(cpuColor(black)),
     
     % Status bar
     new(@sbar, picture('Sbar', size(260, 70))),
     send(@sbar, background, colour(gray)),
-    drawStatusBar(@sbar),
+    new(@currentColorBox, box(10,10)),
     send(StatusBar, append, @sbar),
 
     % StackViewer
@@ -62,12 +67,14 @@ app():-
     send(@sview, append, @svCanvas),
 
     %Black Pieces
-    drawPieceSelection(black, BCanvas),
-    send(BlackPieces, append, BCanvas),
+    new(@bCanvas, picture('Black Pieces', size(260, 180))),
+    send(@bCanvas, background, colour(gray)),
+    send(BlackPieces, append, @bCanvas),
 
     %White Pieces
-    drawPieceSelection(white, WCanvas),
-    send(WhitePieces, append, WCanvas),
+    new(@wCanvas, picture('White Pieces', size(260, 180))),
+    send(@wCanvas, background, colour(gray)),
+    send(WhitePieces, append, @wCanvas),
 
     %Right Panel
     send(RightPanel, append, Menu),
@@ -76,25 +83,44 @@ app():-
     send(RightPanel, append, WhitePieces),
     send(RightPanel, append, @sview),
 
+    startNewGame(human),
 
-    send(Board, background, colour(gray)),
-
-    assertz(board(Board)),
-    send(Window, append, Board),
+    send(@boardCanvas, background, colour(gray)),
+    assertz(board(@boardCanvas)),
+    send(Window, append, @boardCanvas),
     send(Window, append, RightPanel, right),
     send(Window, open).
 
+
+startNewGame(O):-
+    retractall(opponent(_)),
+    retractall(cpuColor(_)),
+    board:clearBoard,
+    board:initBoard(white, black),
+    send(@boardCanvas,clear),
+    send(@svCanvas,clear),
+    drawStatusBar(@sbar),
+    drawPieceSelection(white, @wCanvas),
+    drawPieceSelection(black, @bCanvas),
+    startCpu(O).
+
+startCpu(human).
+startCpu(computer):-
+    assertz(opponent(computer)),
+    assertz(cpuColor(black)). 
+
+
 drawStatusBar(Canvas):-
+    send(Canvas, clear),
+    send(@currentColorBox, free),
     send(Canvas, display, new(@currentColorBox, box(10,10)), point(10,10)),
     send(@currentColorBox, fill_pattern, colour(white)),
     send(Canvas, display, new(text('player\'s turn')), point(30, 5)),
     send(Canvas, display, new(text('Selected cell:')), point(10, 30)).
 
 drawPieceSelection(Color, Canvas):-
-    title(Color, T),
-    new(Canvas, picture(T, size(260, 180))),
-    send(Canvas, background, colour(gray)),
-
+    send(Canvas, clear),
+    retractall(counter(Color,_, _, Canvas, _, _)),
     % get resources
     bm(Color, queen, Qb), bm(Color, beetle, Bb), bm(Color, grasshoper, Gb),
     bm(Color, spider, Sb), bm(Color, ant, Ab), bm(Color, ladybug, Lb),
@@ -177,11 +203,33 @@ drawDestinationCell(X1,Y1,X2,Y2,BugCell,B):-
 
 moveBug(X1,Y1,X2,Y2,BugCell, B):-
     clearPlaceableCells, 
-    send(BugCell, free), 
-    send(B, free),
+    drawedBug(X1,Y1,Cell1, B1),
+    send(Cell1, free), 
+    send(B1, free),
+    retract(drawedBug(X1,Y1,Cell1, B1)),
     board:removeBug(X1,Y1),
     drawBugCell(X2,Y2).
     
+makeCpuMove():- 
+    opponent(computer),
+    board:currentColor(C1), 
+    cpuColor(C2),
+    C1 == C2,
+    cpu:minimax(C2,2,maximize,S,M),
+    write_ln('here'),
+    makeCpuMove(M).
+makeCpuMove().
+
+makeCpuMove([T,X,Y]):-
+    cpuColor(C),
+    retractall(selectedBug(_,_,_)),
+    assertz(selectedBug(C, T, place)),
+    drawBugCell(X,Y).
+makeCpuMove([T,X1,Y1,X2,Y2]):-
+    cpuColor(C),
+    retractall(selectedBug(_,_,_)),
+    assertz(selectedBug(C,T,move)),
+    moveBug(X1, Y1, X2, Y2, a, a).
 
 drawBugCell(X, Y):- %add another mode like place/move to use the line that updates the counter
     selectedBug(C, T, _), % Get the bug that is going to be drawn
@@ -198,9 +246,11 @@ drawBugCell(X, Y):- %add another mode like place/move to use the line that updat
         selectedBug(_,_,move); 
         (board:updateBugCount(C,T), updateCounter(C,T))
     ),
+    assertz(drawedBug(X,Y, Cell, B)),
     board:changeCurrentColor,
     updateCurrentColorBox,
-    clearPlaceableCells.
+    clearPlaceableCells,
+    makeCpuMove.
 
 drawStack(X,Y):-
     send(@svCanvas, clear),
