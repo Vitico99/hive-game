@@ -9,8 +9,7 @@ queenSurrounded(Color, 0):- \+ board:bug(Color, queen, _,_,_).
 queenSurrounded(Color, Count):-
     board:bug(Color, queen, X1,Y1,0),
     !,
-    findall([X2,Y2],board:nonEmptyAdyacent(X1,Y1,X2,Y2), Adys),
-    length(Adys, Count).
+    aggregate_all(count, board:nonEmptyAdyacent(X1,Y1,X2,Y2), Count).
 
 piecesPinned(Color, Count):-
     findall(board:bug(Color, T, X,Y,S), board:bug(Color, T, X,Y,S), Bugs),
@@ -66,19 +65,20 @@ eval(Color, Score):-
     queenSurrounded(Ecolor, QsE),
     QsMetric is QsE - QsC,
 
-    piecesPinned(Color, PpC),
-    piecesPinned(Ecolor, PpE),
-    PpMetric is PpE - PpC,
+    % piecesPinned(Color, PpC),
+    % piecesPinned(Ecolor, PpE),
+    % PpMetric is PpE - PpC,
     
-    piecesMoves(Color, PmC),
-    piecesMoves(Ecolor, PmE),
-    PmMetric is PmC - PmE,
+    % piecesMoves(Color, PmC),
+    % piecesMoves(Ecolor, PmE),
+    % PmMetric is PmC - PmE,
 
     metric_weight(queenSurrounded, QS),
-    metric_weight(piecesPinned, PP),
-    metric_weight(piecesMoves, PM),
-    scalar_product([QS,PP,PM],[QsMetric, PpMetric, PmMetric],#=,Score),!.
-
+    % metric_weight(piecesPinned, PP),
+    % metric_weight(piecesMoves, PM),
+    % scalar_product([QS,PP,PM],[QsMetric, PpMetric, PmMetric],#=,Score),!.
+    % scalar_product([QS,PP],[QsMetric, PpMetric],#=,Score),!.
+    Score is QS * QsMetric.
 % =================================Minimax========================================== 
 
 getPlaceMoves(Color,Moves):-
@@ -106,86 +106,63 @@ boardMove(Color, X1,Y1, X2, Y2, T):-
 flip(maximize, minimize).
 flip(minimize, maximize).
 
-% minimize(Color, Score, Move):-
-%     board:opponent(Color,C),
-%     getPlaceMoves(C, PlaceMoves),
-%     getBoardMoves(C, BoardMoves),
-%     minimizePlaceMove(Color, PlaceMoves, Score1, Move1),!,
-%     minimizeBoardMove(Color, BoardMoves, Score2, Move2),!,
-%     selectBest(Score1, Move1, Score2, Move2, Score, Move).
 
 minimax(Color, 0, _, Score, [-1,-1,-1]):- 
     (eval(Color, Score); 
     write_ln("************************************"),
-    findall(board:bug(C,T,X,Y,S), board:bug(C,T,X,Y,S), Bugs),
+    findall(board:bug(C,T,X,Y,S), board:bug(C,T,X,Y,S), Bugs), %Like throw exception
     write_ln(Bugs),
     write_ln("************************************")
     ),!. 
 minimax(Color,Depth, Crit, Score, Move ):-
     Depth >0,
-    write('Minimax: '), write_ln([Color, Depth, Crit]),
-    
-    
     getPlaceMoves(Color, PlaceMoves),
     getBoardMoves(Color, BoardMoves),
-    minimaxPlaceMove(Color, PlaceMoves, Depth, Crit, Score1, Move1),!,
-    minimaxBoardMove(Color, BoardMoves, Depth, Crit, Score2, Move2),!,
-    selectBestByCrit(Score1, Move1, Score2, Move2, Score, Move,Crit).
+    % getFirsts(PlaceMoves1,3, PlaceMoves),   % Maybe Limit the numbers of plays ?
+    % getFirsts(BoardMoves1,3,BoardMoves),
+    selectInitialScoreAndMove(Crit,Acc, AccMove),
+    minimaxPlaceMove(Color, PlaceMoves, Depth, Crit,Acc, AccMove, Score1, Move1),!,
+    minimaxBoardMove(Color, BoardMoves, Depth, Crit,Acc, AccMove, Score2, Move2),!,
+    selectByCrit(Score1, Move1, Score2, Move2, Score, Move,Crit).
+
+selectInitialScoreAndMove(maximize, -100000, [-1,-1,-1]).
+selectInitialScoreAndMove(minimize, 100000, [-1,-1,-1]).
 
 
 
-minimaxPlaceMove(_, [],_, maximize, -1000000,[-1,-1,-1]):- !, true.
-minimaxPlaceMove(_, [],_,minimize, 1000000,[-1,-1,-1]):- !,true.
-minimaxPlaceMove(Color, [[T,X,Y]| R],Depth ,Crit, Score, Move):-
+minimaxPlaceMove(_, [], _, _, Acc, AccMove, Acc, AccMove):- !, true.
+minimaxPlaceMove(Color, [[T,X,Y]| R],Depth ,Crit,Acc,AccMove, Score, Move):-
     board:saveBoard(Bugs, Frontier, CurrentColor, CurrentTurn, AvailableBugs,LastPlacedBug, FirstBug ),
     board:placeBug(Color, T, X, Y),
     board:updateBugCount(Color,T),
     board:changeCurrentColor,
+    eval(Color, TempScore),!,
+    selectCurrent(Color, Depth, Crit,Acc,AccMove, TempScore, [T,X,Y], NewAcc, NewMove),!,
+    board:loadBoard(Bugs, Frontier, CurrentColor, CurrentTurn, AvailableBugs,LastPlacedBug, FirstBug),
+    minimaxPlaceMove(Color, R,Depth, Crit,NewAcc,NewMove, Score, Move),!.
+    % selectByCrit(Score1,[T,X,Y], Score2, Move2, Score, Move, Crit).
+
+selectCurrent(_, _,maximize, Acc,AccMove, TempScore,_,Acc, AccMove):- TempScore =< Acc,!.
+selectCurrent(_, _,minimize, Acc, AccMove, TempScore,_,Acc, AccMove):- TempScore >= Acc,!.
+selectCurrent(Color, Depth,Crit,Acc,AccMove,_, CurrMove, NewAcc, NewMove):-
     board:opponent(Color, Color1),
     flip(Crit, Crit1),
     Depth1 is Depth -1,
-    minimax(Color1,Depth1, Crit1, Score1,_),!,
-    board:loadBoard(Bugs, Frontier, CurrentColor, CurrentTurn, AvailableBugs,LastPlacedBug, FirstBug),
-    minimaxPlaceMove(Color, R,Depth, Crit, Score2, Move2),!,
-    selectByCrit(Score1,[T,X,Y], Score2, Move2, Score, Move, Crit).
+    minimax(Color1,Depth1,Crit1, Score1,_),!,
+    selectByCrit(Score1, CurrMove, Acc, AccMove, NewAcc, NewMove, Crit).
 
-% minimizePlaceMove(_,[], 1000000, [-1,-1,-1]):- !, true.
-% minimizePlaceMove(Color, [[T,X,Y]|R],Score, Move):-
-%     board:saveBoard(Bugs, Frontier, CurrentColor, CurrentTurn, AvailableBugs,LastPlacedBug, FirstBug ),
-%     %Try the current move
-%     board:placeBug(CurrentColor, T, X,Y),
-%     board:updateBugCount(CurrentColor,T),
-%     eval(Color, CurrScore),
-%     board:loadBoard(Bugs, Frontier, CurrentColor, CurrentTurn, AvailableBugs,LastPlacedBug, FirstBug),
-%     minimizePlaceMove(Color, R, Score1, Move1),!,
-%     selectTheMin(CurrScore, [T,X,Y],Score1, Move1, Score, Move).
-
-
-minimaxBoardMove(_, [],_, maximize, -1000000,[-1,-1,-1, -1, -1]):- !, true.
-minimaxBoardMove(_, [],_,minimize, 1000000,[-1,-1,-1, -1, -1]):- !, true.
-minimaxBoardMove(Color, [[T,X1,Y1,X2,Y2]|R], Depth, Crit, Score, Move):-
+minimaxBoardMove(_,[],_,_,Acc, AccMove, Acc, AccMove):- !, true.
+minimaxBoardMove(Color, [[T,X1,Y1,X2,Y2]|R], Depth, Crit,Acc, AccMove, Score, Move):-
     board:saveBoard(Bugs, Frontier, CurrentColor, CurrentTurn, AvailableBugs,LastPlacedBug, FirstBug ),
     board:removeBug(X1,Y1),
     board:placeBug(Color, T, X2, Y2),
-    board:opponent(Color, Color1),
     board:changeCurrentColor,
-    flip(Crit, Crit1),
-    Depth1 is Depth -1,
-    minimax(Color1,Depth1, Crit1, Score1,_),!,
+    eval(Color, TempScore),
+    selectCurrent(Color, Depth, Crit, Acc, AccMove, TempScore,[T,X1,Y1,X2,Y2], NewAcc, NewMove),!,
     board:loadBoard(Bugs, Frontier, CurrentColor, CurrentTurn, AvailableBugs,LastPlacedBug, FirstBug),
-    minimaxBoardMove(Color,R, Depth, Crit, Score2, Move2),!,
-    selectByCrit(Score1,[T,X1,Y1,X2,Y2], Score2, Move2, Score, Move, Crit).
+    minimaxBoardMove(Color,R, Depth, Crit,NewAcc,NewMove, Score, Move),!.
  
 
-% minimizeBoardMove(_,[], 1000000, [-1,-1,-1,-1,-1]):- !, true.
-% minimizeBoardMove(Color, [[T,X1,Y1, X2, Y2]|R], Score,Move):-
-%     board:saveBoard(Bugs, Frontier, CurrentColor, CurrentTurn, AvailableBugs,LastPlacedBug, FirstBug ),
-%     board:removeBug(X1,Y1),
-%     board:placeBug(CurrentColor, T, X2, Y2),
-%     eval(Color, CurrScore),
-%     board:loadBoard(Bugs, Frontier, CurrentColor, CurrentTurn, AvailableBugs,LastPlacedBug, FirstBug),
-%     minimizeBoardMove(Color, R, Score1, Move1),!,
-%     selectTheMin(CurrScore, [T,X1,Y1, X2, Y2], Score1, Move1, Score, Move).
 
 %Comparing type of moves : [T,X,Y] <=> [T,X,Y]
 selectByCrit(S1, [T1,X1,Y1], S2, [_,_,_], S1, [T1,X1,Y1], minimize):- S1 < S2, !.
@@ -205,14 +182,21 @@ selectByCrit(S1, [_,_,_,_,_], S2, [T2, X21, X22, Y21, Y22], S2,[T2, X21, Y21, X2
     S1 =<S2,!.
 
 %Comparing type of moves :  [T,X,Y] <=>[T,X1,Y1, X2, Y2]
-selectBestByCrit(S1, [T,X,Y], S2, [_,_,_,_,_], S1, [T,X,Y], minimize ):- S1 < S2,!.
-selectBestByCrit(S1, [_,_,_], S2, [T1, X1,Y1, X2,Y2], S2, [T1,X1,Y1,X2,Y2], minimize):- S1 >= S2,!.
-selectBestByCrit(S1, [T,X,Y], S2, [_,_,_,_,_], S1, [T,X,Y], maximize):- S1 > S2,!.
-selectBestByCrit(S1, [_,_,_], S2, [T1, X1,Y1, X2,Y2], S2, [T1,X1,Y1,X2,Y2],maximize):- S1 =<S2,!.
+selectByCrit(S1, [T,X,Y], S2, [_,_,_,_,_], S1, [T,X,Y], minimize ):- S1 < S2,!.
+selectByCrit(S1, [_,_,_], S2, [T1, X1,Y1, X2,Y2], S2, [T1,X1,Y1,X2,Y2], minimize):- S1 >= S2,!.
+selectByCrit(S1, [T,X,Y], S2, [_,_,_,_,_], S1, [T,X,Y], maximize):- S1 > S2,!.
+selectByCrit(S1, [_,_,_], S2, [T1, X1,Y1, X2,Y2], S2, [T1,X1,Y1,X2,Y2],maximize):- S1 =<S2,!.
 
 
 %Comparing type of moves :   [T,X1,Y1, X2, Y2<=> [T,X,Y]
-selectBestByCrit(S1, [T1, X1, Y1, X2, Y2], S2, [_,_,_], S1, [T1,X1,Y1,X2,Y2], minimize):- S1 < S2, !.
-selectBestByCrit(S1, [_,_,_,_,_], S2, [T,X,Y], S2, [T,X,Y], minimize):- S1 >= S2, !.
-selectBestByCrit(S1, [T1, X1, Y1, X2, Y2], S2, [_,_,_], S1, [T1,X1,Y1,X2,Y2],maximize):- S1 > S2, !.
-selectBestByCrit(S1, [_,_,_,_,_], S2, [T,X,Y], S2, [T,X,Y],maximize):- S1 =<S2, !.
+selectByCrit(S1, [T1, X1, Y1, X2, Y2], S2, [_,_,_], S1, [T1,X1,Y1,X2,Y2], minimize):- S1 < S2, !.
+selectByCrit(S1, [_,_,_,_,_], S2, [T,X,Y], S2, [T,X,Y], minimize):- S1 >= S2, !.
+selectByCrit(S1, [T1, X1, Y1, X2, Y2], S2, [_,_,_], S1, [T1,X1,Y1,X2,Y2],maximize):- S1 > S2, !.
+selectByCrit(S1, [_,_,_,_,_], S2, [T,X,Y], S2, [T,X,Y],maximize):- S1 =<S2, !.
+
+% Get the first Count Elements of the List L
+getFirsts(L, Count, L):- length(L, Len), Count>= Len,!.
+getFirsts([X|R], 1, [X]):- !, true.
+getFirsts([X|R], Count, [X|R1]):-
+    Count1 is Count -1,
+    getFirsts(R ,Count1, R1).
