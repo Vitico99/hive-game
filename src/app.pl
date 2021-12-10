@@ -1,7 +1,9 @@
 :-use_module(library(pce)).
 :-use_module(board).
 :-use_module(bugs).
-:-use_module(cpu).
+%:-use_module(cpu).
+:-use_module(ai).
+
 
 :- dynamic selectedBug/3.
 :- dynamic drawedPlaceable/3.
@@ -215,7 +217,7 @@ makeCpuMove():-
     board:currentColor(C1), 
     cpuColor(C2),
     C1 == C2,
-    cpu:minimax(C2,2,maximize,S,M),
+    cpu:ai:alphaBeta(C1,M,S),
     write_ln('here'),
     makeCpuMove(M).
 makeCpuMove().

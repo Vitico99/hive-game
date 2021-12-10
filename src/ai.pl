@@ -1,7 +1,10 @@
-:-module(cpu,[]).
+:-module(ai,[]).
 :-use_module(board).
 :-use_module(bugs).
 :-use_module(library(clpfd)).
+
+:-dynamic target/2.
+:- dynamic calculated/3.
 
 % ================================= Metrics ==========================================  
 
@@ -20,8 +23,8 @@ pinnedBug(C,X,Y):-
     S2 < S1.
 pinnedBug(C,X,Y):-
     board:getCellTop(X,Y,S),
-    (\+canBeRemoved(X,Y);
-    \+canBeMoved(X,Y,S)).
+    (\+board:canBeRemoved(X,Y);
+    \+board:canBeMoved(X,Y,S)).
     
 
 piecesMoves(Color, Count):-
@@ -43,21 +46,20 @@ eval(Color, Score):-
     queenSurrounded(Ecolor, QsE),
     QsMetric is QsE - QsC,
 
-    % piecesPinned(Color, PpC),
-    % piecesPinned(Ecolor, PpE),
-    % PpMetric is PpE - PpC,
+    piecesPinned(Color, PpC),
+    piecesPinned(Ecolor, PpE),
+    PpMetric is PpE - PpC,
     
-    % piecesMoves(Color, PmC),
-    % piecesMoves(Ecolor, PmE),
-    % PmMetric is PmC - PmE,
+    %piecesMoves(Color, PmC),
+    %piecesMoves(Ecolor, PmE),
+    %PmMetric is PmC - PmE,
 
     metric_weight(queenSurrounded, QS),
-    % metric_weight(piecesPinned, PP),
-    % metric_weight(piecesMoves, PM),
-    % scalar_product([QS,PP,PM],[QsMetric, PpMetric, PmMetric],#=,Score),!.
-    % scalar_product([QS,PP],[QsMetric, PpMetric],#=,Score),!.
-    Score is QS * QsMetric.
-
+    metric_weight(piecesPinned, PP),
+    %metric_weight(piecesMoves, PM),
+    %scalar_product([QS,PP,PM],[QsMetric, PpMetric, PmMetric],#=,Score),!.
+    scalar_product([QS,PP],[QsMetric, PpMetric],#=,Score),!.
+    %Score is QS * QsMetric.
 
 
 
@@ -94,23 +96,27 @@ move([T, X1, Y1, X2, Y2]):-
 % ========================================= Alpha Beta Algorithm ==========================================================
 
 alphaBeta(Color, Move, Val):-
-    assertz(target(Color, maximize),
-    opponent(Color, OColor),
+    retractall(target(_,_)),
+    assertz(target(Color, maximize)),
+    board:opponent(Color, OColor),
     assertz(target(OColor, minimize)),
-    alphaBeta(Color, 4, -infinity, +infinity, Move, Val).
+    alphaBeta(Color, 2, -10000, 10000, Move, Val).
 
 alphaBeta(Color, Depth, Alpha, Beta, Move, Val):- 
     Depth > 0,!,
     moves(Color, Moves),!, % get all possible moves
-    boundedBest(Moves, Depth, Alpha, Beta, Move, Val); % get the best 
+    boundedBest(Color, Moves, Depth, Alpha, Beta, Move, Val); % get the best 
     eval(Color, Val). % This board is a final board so just return the score
 
 boundedBest(Color, [Move|Moves], Depth, Alpha, Beta, BestMove, BestVal):-
     % play the move
+    board:saveBoard(Bugs, Frontier, CurrentColor, CurrentTurn, AvailableBugs,LastPlacedBug, FirstBug ),
     move(Move),
-    opponent(Color, OColor),
-    alphaBeta(OColor, Depth - 1, Alpha, Beta, _, MoveVal), % get the alpha-beta approx value of Move 
-    goodEnough(Color, Moves, Depth, Alpha, Beta, Move, MoveVal, BestMove, BestVal). % check if Move is the best possible move
+    board:opponent(Color, OColor),
+    Depth1 is Depth -1,
+    alphaBeta(OColor, Depth1, Alpha, Beta, _, MoveVal), % get the alpha-beta approx value of Move 
+    goodEnough(Color, Moves, Depth, Alpha, Beta, Move, MoveVal, BestMove, BestVal), % check if Move is the best possible move
+     board:loadBoard(Bugs, Frontier, CurrentColor, CurrentTurn, AvailableBugs,LastPlacedBug, FirstBug).
 
 goodEnough(_, [], _, _, _, Move, MoveVal, Move, MoveVal):- !. % There are no more moves on the list so this has to do
 goodEnough(Color, _, _, Alpha, Beta, Move, MoveVal, Move, MoveVal):- % Try to prune the tree using the alpha beta condition
