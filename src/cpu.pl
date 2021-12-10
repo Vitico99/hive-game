@@ -90,8 +90,8 @@ getBoardMoves(Color, Moves):-
     sort(Moves1,Moves).
 
 placeMove(Color, X, Y, Type):-
-    board:placeableByColor(X,Y,Color),
-    board:placeableByColor(Color,Type).
+    board:placeableByColor(Color,Type),
+    board:placeableByColor(X,Y,Color).
 
 boardMove(Color, X1,Y1, X2, Y2, T):-
     board:bug(Color, T, X1,Y1,_),
@@ -172,13 +172,13 @@ selectByCrit(S1, [_,_,_], S2, [T2,X2,Y2], S2, [T2,X2,Y2],maximize):- S1 =< S2, !
 
 
 %Comparing type of moves : [T,X1,Y1, X2, Y2] <=> [T,X1,Y1,X2,Y2]
-selectByCrit(S1, [T1, X11, Y11, X12, Y12], S2, [_,_,_,_,_], S1,[T1, X11, Y11, X12, Y12], minimize):-
+selectByCrit(S1, [T1, X11, Y11, X12, Y12], S2, [_,_,_,_,_], S1, [T1, X11, Y11, X12, Y12], minimize):-
     S1 < S2,!.
-selectByCrit(S1, [_,_,_,_,_], S2, [T2, X21, X22, Y21, Y22], S2,[T2, X21, Y21, X22, Y22],minimize):-
+selectByCrit(S1, [_,_,_,_,_], S2, [T2, X21, Y21, X22, Y22], S2, [T2, X21, Y21, X22, Y22],minimize):-
     S1 >= S2,!.
-selectByCrit(S1, [T1, X11, Y11, X12, Y12], S2, [_,_,_,_,_], S1,[T1, X11, Y11, X12, Y12],maximize):-
+selectByCrit(S1, [T1, X11, Y11, X12, Y12], S2, [_,_,_,_,_], S1, [T1, X11, Y11, X12, Y12],maximize):-
     S1 > S2,!.
-selectByCrit(S1, [_,_,_,_,_], S2, [T2, X21, Y21, X22, Y22], S2,[T2, X21, Y21, X22, Y22],maximize):-
+selectByCrit(S1, [_,_,_,_,_], S2, [T2, X21, Y21, X22, Y22], S2, [T2, X21, Y21, X22, Y22],maximize):-
     S1 =<S2,!.
 
 %Comparing type of moves :  [T,X,Y] <=>[T,X1,Y1, X2, Y2]
@@ -188,7 +188,7 @@ selectByCrit(S1, [T,X,Y], S2, [_,_,_,_,_], S1, [T,X,Y], maximize):- S1 > S2,!.
 selectByCrit(S1, [_,_,_], S2, [T1, X1,Y1, X2,Y2], S2, [T1,X1,Y1,X2,Y2],maximize):- S1 =<S2,!.
 
 
-%Comparing type of moves :   [T,X1,Y1, X2, Y2<=> [T,X,Y]
+%Comparing type of moves :   [T,X1,Y1, X2, Y2]<=> [T,X,Y]
 selectByCrit(S1, [T1, X1, Y1, X2, Y2], S2, [_,_,_], S1, [T1,X1,Y1,X2,Y2], minimize):- S1 < S2, !.
 selectByCrit(S1, [_,_,_,_,_], S2, [T,X,Y], S2, [T,X,Y], minimize):- S1 >= S2, !.
 selectByCrit(S1, [T1, X1, Y1, X2, Y2], S2, [_,_,_], S1, [T1,X1,Y1,X2,Y2],maximize):- S1 > S2, !.
