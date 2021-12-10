@@ -26,8 +26,8 @@ pinnedBug(C,X,Y):-
     S2 < S1.
 pinnedBug(C,X,Y):-
     board:getCellTop(X,Y,S),
-    (\+canBeRemoved(X,Y);
-    \+canBeMoved(X,Y,S)).
+    (\+board:canBeRemoved(X,Y);
+    \+board:canBeMoved(X,Y,S)).
     
 
 % countPinnedBugs([],0).
@@ -48,21 +48,40 @@ pinnedBug(C,X,Y):-
 %     !,
 %     Count is C1 +1.
 
-piecesMoves(Color, Count):-
-    findall(board:bug(Color, T, X,Y,S), board:bug(Color, T, X,Y,S), Bugs),
-    countMoves(Bugs, Count).
+% piecesMoves(Color, Count):-
+%     findall(board:bug(Color, T, X,Y,S), board:bug(Color, T, X,Y,S), Bugs),
+%     countMoves(Bugs, Count).
 
-countMoves([],0).
-countMoves([board:bug(_,_,X,Y,S)|R], Count):-
-    (\+board:canBeRemoved(X,Y);
-    \+board:canBeMoved(X,Y,S)),
-    !,
-    countMoves(R,Count).
-countMoves([board:bug(_,T,X,Y,_)|R], Count):-
-    bugs:countDestinations(X,Y,T,Cm),
-    !,
-    countMoves(R,Cr),
-    Count is Cm + Cr.
+% countMoves([],0).
+% countMoves([board:bug(_,_,X,Y,S)|R], Count):-
+%     (\+board:canBeRemoved(X,Y);
+%     \+board:canBeMoved(X,Y,S)),
+%     !,
+%     countMoves(R,Count).
+% countMoves([board:bug(_,T,X,Y,_)|R], Count):-
+%     bugs:countDestinations(X,Y,T,Cm),
+%     !,
+%     countMoves(R,Cr),
+%     Count is Cm + Cr.
+
+piecesMoves(Color, Count):-
+    moves(Color, Moves),
+    length(Moves, Count).
+
+moves(Color, Moves):-
+    findall(Move, possibleMove(Color, Move), Moves).
+
+possibleMove(Color, [T,X,Y]):-
+    board:placeableByColor(Color, T),
+    board:placeableByColor(X, Y, Color).
+
+possibleMove(Color, [T, X1, Y1, X2, Y2]):-
+    board:bug(Color, T, X1,Y1,S),
+    board:canBeRemoved(X1,Y1),
+    board:getCellTop(X1,Y1,S),
+    board:canBeMoved(X1,Y1, S),
+    (calculated(T,X1,Y1); bugs:getDestinations(X1,Y1,T, Color), assertz(calculated(C1,Y1,T))),
+    bugs:destination(X2,Y2).
 
 % ================================= Eval Function==========================================  
 
@@ -80,20 +99,20 @@ eval(Color, Score):-
     queenSurrounded(Ecolor, QsE),
     QsMetric is QsE - QsC,
 
-    % piecesPinned(Color, PpC),
-    % piecesPinned(Ecolor, PpE),
-    % PpMetric is PpE - PpC,
+    piecesPinned(Color, PpC),
+    piecesPinned(Ecolor, PpE),
+    PpMetric is PpE - PpC,
     
-    % piecesMoves(Color, PmC),
-    % piecesMoves(Ecolor, PmE),
-    % PmMetric is PmC - PmE,
+    %piecesMoves(Color, PmC),
+    %piecesMoves(Ecolor, PmE),
+    %PmMetric is PmC - PmE,
 
     metric_weight(queenSurrounded, QS),
-    % metric_weight(piecesPinned, PP),
-    % metric_weight(piecesMoves, PM),
-    % scalar_product([QS,PP,PM],[QsMetric, PpMetric, PmMetric],#=,Score),!.
-    % scalar_product([QS,PP],[QsMetric, PpMetric],#=,Score),!.
-    Score is QS * QsMetric.
+    metric_weight(piecesPinned, PP),
+    %metric_weight(piecesMoves, PM),
+    %scalar_product([QS,PP,PM],[QsMetric, PpMetric, PmMetric],#=,Score),!.
+    scalar_product([QS,PP],[QsMetric, PpMetric],#=,Score),!.
+    %Score is QS * QsMetric.
 % =================================Minimax========================================== 
 
 getPlaceMoves(Color,Moves):-

@@ -17,11 +17,11 @@ getDestinations(X,Y,T,C):-
     board:currentColor(C),
     forall(destination(A,B), retractall(destination(A,B))),
     bugDestinations(X,Y,T),
-    (overPillbugDestinations(X,Y); write_ln('Generated possible moves 1')).
+    (overPillbugDestinations(X,Y); true).
 
 getDestinations(X,Y,_,_):-
     forall(destination(A,B), retractall(destination(A,B))),
-    (overPillbugDestinations(X,Y); write_ln('Generated possible moves 2')).
+    (overPillbugDestinations(X,Y); true).
 
 bugDestinations(X,Y,queen):- queenDestinations(X,Y).
 bugDestinations(X,Y,beetle):- beetleDestinations(X,Y).
