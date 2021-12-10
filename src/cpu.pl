@@ -13,27 +13,40 @@ queenSurrounded(Color, Count):-
     !,
     aggregate_all(count, board:nonEmptyAdyacent(X1,Y1,X2,Y2), Count).
 
+% piecesPinned(Color, Count):-
+%     findall(board:bug(Color, T, X,Y,S), board:bug(Color, T, X,Y,S), Bugs),
+%     countPinnedBugs(Bugs, Count).
+
 piecesPinned(Color, Count):-
-    findall(board:bug(Color, T, X,Y,S), board:bug(Color, T, X,Y,S), Bugs),
-    countPinnedBugs(Bugs, Count).
+    aggregate_all(count, pinnedBug(C,X,Y), Count).
 
-countPinnedBugs([],0).
-countPinnedBugs([board:bug(_,_,X,Y,S)|R], Count):-
-    (\+board:canBeRemoved(X,Y);
-    \+board:canBeMoved(X,Y,S)),
-    !,
-    countPinnedBugs(R,C1), Count is C1 + 1.
+pinnedBug(C,X,Y):-
+    board:getCellTop(X,Y,S1),
+    board:bug(C,_,X,Y,S2),
+    S2 < S1.
+pinnedBug(C,X,Y):-
+    board:getCellTop(X,Y,S),
+    (\+canBeRemoved(X,Y);
+    \+canBeMoved(X,Y,S)).
+    
 
-countPinnedBugs([board:bug(_,T,X,Y,_)|R], Count):-
-    bugs:countDestinations(X,Y,T,Cp),
-    Cp >0,
-    !,
-    countPinnedBugs(R,Count).
+% countPinnedBugs([],0).
+% countPinnedBugs([board:bug(_,_,X,Y,S)|R], Count):-
+%     (\+board:canBeRemoved(X,Y);
+%     \+board:canBeMoved(X,Y,S)),
+%     !,
+%     countPinnedBugs(R,C1), Count is C1 + 1.
 
-countPinnedBugs([board:bug(_,_,_,_,_)|R], Count):-
-    countPinnedBugs(R,C1),
-    !,
-    Count is C1 +1.
+% countPinnedBugs([board:bug(_,T,X,Y,_)|R], Count):-
+%     bugs:countDestinations(X,Y,T,Cp),
+%     Cp >0,
+%     !,
+%     countPinnedBugs(R,Count).
+
+% countPinnedBugs([board:bug(_,_,_,_,_)|R], Count):-
+%     countPinnedBugs(R,C1),
+%     !,
+%     Count is C1 +1.
 
 piecesMoves(Color, Count):-
     findall(board:bug(Color, T, X,Y,S), board:bug(Color, T, X,Y,S), Bugs),
