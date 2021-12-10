@@ -178,7 +178,7 @@ selectByCrit(S1, [_,_,_,_,_], S2, [T2, X21, X22, Y21, Y22], S2,[T2, X21, Y21, X2
     S1 >= S2,!.
 selectByCrit(S1, [T1, X11, Y11, X12, Y12], S2, [_,_,_,_,_], S1,[T1, X11, Y11, X12, Y12],maximize):-
     S1 > S2,!.
-selectByCrit(S1, [_,_,_,_,_], S2, [T2, X21, X22, Y21, Y22], S2,[T2, X21, Y21, X22, Y22],maximize):-
+selectByCrit(S1, [_,_,_,_,_], S2, [T2, X21, Y21, X22, Y22], S2,[T2, X21, Y21, X22, Y22],maximize):-
     S1 =<S2,!.
 
 %Comparing type of moves :  [T,X,Y] <=>[T,X1,Y1, X2, Y2]
