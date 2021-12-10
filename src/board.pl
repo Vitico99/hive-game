@@ -191,11 +191,16 @@ placeBug(C,T,X,Y):-
 % removeBug/2
 removeBug(X,Y):- % Remove Position X,Y. Assumes there is only one bug in cell.
     getCellTop(X,Y,S),
+    S == 0,!,
     getBug(X,Y,S,Bug),
     forall(isolatedEmptyAdyacent(X,Y,X1,Y1), unsetFrontier(X1,Y1)),
     retract(Bug),
-    S == 0,
     setFrontier(X,Y).
+removeBug(X,Y):-
+    getCellTop(X,Y,S),
+    S >=1,!,
+    getBug(X,Y,S,Bug),
+    retract(Bug).
 removeBug(_,_).
 
 % updateBugCount/2
