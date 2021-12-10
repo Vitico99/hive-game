@@ -3,6 +3,8 @@
 :-use_module(bugs).
 :-use_module(library(clpfd)).
 
+:- dynamic calculated/3.
+
 % ================================= Metrics ==========================================  
 
 queenSurrounded(Color, 0):- \+ board:bug(Color, queen, _,_,_).
@@ -86,6 +88,7 @@ getPlaceMoves(Color,Moves):-
    sort(Moves1,Moves).
    
 getBoardMoves(Color, Moves):-
+    retractall(calculated(_,_,_)),
     findall([T,X1,Y1, X2, Y2],  boardMove(Color, X1,Y1, X2,Y2,T), Moves1),
     sort(Moves1,Moves).
 
@@ -94,12 +97,11 @@ placeMove(Color, X, Y, Type):-
     board:placeableByColor(X,Y,Color).
 
 boardMove(Color, X1,Y1, X2, Y2, T):-
-    board:bug(Color, T, X1,Y1,_),
+    board:bug(Color, T, X1,Y1,S),
     board:canBeRemoved(X1,Y1),
     board:getCellTop(X1,Y1,S),
     board:canBeMoved(X1,Y1, S),
-    board:bug(Color, T, X1,Y1,S),
-    bugs:getDestinations(X1,Y1,T, Color),
+    (calculated(T,X1,Y1); bugs:getDestinations(X1,Y1,T, Color), assertz(calculated(C1,Y1,T))),
     bugs:destination(X2,Y2).
 
 
