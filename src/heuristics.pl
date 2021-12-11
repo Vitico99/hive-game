@@ -119,23 +119,26 @@ eval(Color, Val):-
     Turn > 4,
     aggregate_all(count, board:bug(Color,_,_,_,_), Cnt),
     Cnt < 12,
-    
     board:opponent(Color, OColor),
 
     bugCountMetric(Color, ant, AntCount),
     pinnedAntsMetric(Color, PinnedAnts),
     FreeAnts is AntCount - PinnedAnts,
-    pinnedAntsMetric(Ocolor, OPinnedAnts),  
+    pinnedAntsMetric(OColor, OPinnedAnts),  
 
-    (\+mosquitoLikeAnt(Color), MosquitoAnt is 1; MosquitoAnt is 0),
+    % (\+mosquitoLikeAnt(Color), MosquitoAnt is 1; MosquitoAnt is 0),
 
-    bugCountMetric(Color, spider, SpiderCount),
-    pinnedQueenMetric(OColor, PinnedQueen),
-    queenSurrounded(Color, CQueenSurround),
-    queenSurrounded(Ocolor, OQueenSurround),
+    % bugCountMetric(Color, spider, SpiderCount),
+    % pinnedQueenMetric(OColor, PinnedQueen),
+    % queenSurrounded(Color, CQueenSurround),
+    % queenSurrounded(Ocolor, OQueenSurround),
 
-
-    Val is 150 * FreeAnts + 350 * OPinnedAnts + 150 * MosquitoAnt.
+    write_ln('This heuristic'),
+    write_ln(Color),
+    write_ln(FreeAnts),
+    write_ln(OPinnedAnts),
+    write_ln('Done'),
+    Val is FreeAnts + OPinnedAnts.
 
 
 
