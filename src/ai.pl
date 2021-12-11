@@ -90,8 +90,9 @@ eval(Color, Score):-
 moves(Color, Moves):-
     retractall(calculated(_,_,_)),
     findall(Move, possibleMove(Color, Move), Moves1),
-    predsort(heuristics:early_comparer, Moves1, Moves).
-    %sort(Moves1, Moves).
+    sort(Moves1, Moves2),
+    heuristics:getOrderingHeuristic(Color, Ordering),
+    predsort(Ordering, Moves2, Moves).
 
 possibleMove(Color, [T, X1, Y1, X2, Y2]):-
     board:bug(Color, T, X1,Y1,S),
@@ -134,17 +135,18 @@ flip(maximize, minimize).
 flip(minimize, maximize).
 
 alphaBeta(Color, Move, Val):-
-    alphaBeta(Color, 2, -20000, 20000, Move, Val, maximize).
+    alphaBeta(Color, 2, 0, 10000, Move, Val, maximize).
 
-alphaBeta(Color, 0, Alpha, Beta, Move, Val, Option):-
-    heuristics:eval(Color, Val).
+% alphaBeta(Color, 0, Alpha, Beta, Move, Val, Option):-
+%     heuristics:eval(Color, Val).
     %eval(Color, Val).
 alphaBeta(Color, Depth, Alpha, Beta, Move, Val, Option):-
     Depth > 0, !,
-    moves(Color, Moves),!, % get all possible moves
+    board:currentColor(Color1),
+    moves(Color1, Moves), % get all possible moves
     boundedBest(Color, Moves, Depth, Alpha, Beta, Move, Val, Option);  % get the best
     %eval(Color, Val).
-    heuristics:eval(Color, Val). % This board is a final board so just return the score
+    heuristics:eval(Color1, Val). % This board is a final board so just return the score
 
 boundedBest(Color, [Move|Moves], Depth, Alpha, Beta, BestMove, BestVal, Option):-
     % play the move
@@ -153,6 +155,7 @@ boundedBest(Color, [Move|Moves], Depth, Alpha, Beta, BestMove, BestVal, Option):
     write_ln(Move),
     flip(Option, Option1),
     Depth1 is Depth - 1,
+    write_ln(Depth1),
     alphaBeta(Color, Depth1, Alpha, Beta, _, MoveVal, Option1), % get the alpha-beta approx value of Move
     write_ln(MoveVal),
     board:loadBoard(Bugs, Frontier, CurrentColor, CurrentTurn, AvailableBugs,LastPlacedBug, FirstBug),
@@ -194,10 +197,10 @@ selectByCrit(S1, [T,X,Y], S2, [_,_,_,_,_], S1, [T,X,Y], maximize):- S1 > S2,!.
 selectByCrit(S1, [_,_,_], S2, [T1, X1,Y1, X2,Y2], S2, [T1,X1,Y1,X2,Y2],maximize):- S1 =<S2,!.
 
 %Comparing type of moves :   [T,X1,Y1, X2, Y2]<=> [T,X,Y]
-selectByCrit(S1, [T1, X1, Y1, X2, Y2], S2, [_,_,_], S1, [T1,X1,Y1,X2,Y2], minimize):- S1 < S2, !.
-selectByCrit(S1, [_,_,_,_,_], S2, [T,X,Y], S2, [T,X,Y], minimize):- S1 >= S2, !.
-selectByCrit(S1, [T1, X1, Y1, X2, Y2], S2, [_,_,_], S1, [T1,X1,Y1,X2,Y2],maximize):- S1 > S2, !.
-selectByCrit(S1, [_,_,_,_,_], S2, [T,X,Y], S2, [T,X,Y],maximize):- S1 =<S2, !.
+selectByCrit(S1, [T1, X1, Y1, X2, Y2], S2, [_,_,_], S1, [T1,X1,Y1,X2,Y2], minimize):- S1 =< S2, !.
+selectByCrit(S1, [_,_,_,_,_], S2, [T,X,Y], S2, [T,X,Y], minimize):- S1 > S2, !.
+selectByCrit(S1, [T1, X1, Y1, X2, Y2], S2, [_,_,_], S1, [T1,X1,Y1,X2,Y2],maximize):- S1 >= S2, !.
+selectByCrit(S1, [_,_,_,_,_], S2, [T,X,Y], S2, [T,X,Y],maximize):- S1 < S2, !.
 
 
 % ================================================= Helper ==================================
