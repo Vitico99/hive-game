@@ -20,6 +20,16 @@ midPrecedence(mosquito, 1).
 midPrecedence(pigbull,2).
 
 
+latePrecedence(queen, 1).
+latePrecedence(beetle, 3).
+latePrecedence(grasshoper, 1).
+latePrecedence(spider,3).
+latePrecedence(ant, 3).
+latePrecedence(ladybug, 1).
+latePrecedence(mosquito, 3).
+latePrecedence(pigbull,1).
+
+
 earlyOrdering(>, [T1|_], [T2|_]):-
     earlyPrecedence(T1, P1),
     earlyPrecedence(T2, P2),
@@ -40,11 +50,29 @@ midOrdering(<, [T1|_], [T2|_]):-
     midPrecedence(T2, P2),
     P1 =< P2.
 
+lateOrdering(>, [T1|_], [T2|_]):-
+    latePrecedence(T1, P1),
+    latePrecedence(T2, P2),
+    P1 > P2.
+
+lateOrdering(<, [T1|_], [T2|_]):-
+    latePrecedence(T1, P1),
+    latePrecedence(T2, P2),
+    P1 =< P2.
+
 
 getOrderingHeuristic(Color, heuristics:earlyOrdering):-
     board:currentTurn(Color, Turn), Turn =< 4, !.
 getOrderingHeuristic(Color, heuristics:midOrdering):-
-   board:currentTurn(Color, Turn), Turn > 4, aggregate_all(count, board:bug(Color,_,_,_,_), Cnt), Cnt < 12, !.
+   board:currentTurn(Color, Turn), Turn > 4, aggregate_all(count, board:bug(Color,_,_,_,_), Cnt), Cnt < 11, !.
+getOrderingHeuristic(Color, heuristics:lateOrdering):-
+    aggregate_all(count, board:bug(Color,_,_,_,_), Cnt), Cnt >= 11,!.
+
+
+getAlpha(Color, Alpha):-
+    board:currentTurn(Color, Turn), Turn =< 4, Alpha is 0, !.
+getAlpha(Color, Alpha):-
+    board:currentTurn(Color, Turn), Turn > 4, heuristics:eval(Color, Alpha),!.
 
 
 queenSurrounded(Color, 0):- \+ board:bug(Color, queen, _,_,_).
@@ -99,6 +127,12 @@ mosquitoLikeAnt(Color):-
 % =============================================== Early Game ================================================
 
 
+eval(Color, 2000):-
+    board:colorWin(Color),!.
+eval(Color, -2000):-
+    board:opponent(Color, OColor),
+    board:colorWin(OColor),!.
+
 eval(Color, Val):-
     board:currentTurn(Color, Turn),
     Turn =< 4, !,
@@ -112,13 +146,13 @@ eval(Color, Val):-
     pinnedAntsMetric(Color, PA),
     random(R),
 
-    Val is QS + GS + AS + LS + PS + VS - PA - R.
+    Val is QS + GS + AS + LS + PS + VS - PA - R,!.
 
 eval(Color, Val):-
     board:currentTurn(Color, Turn),
     Turn > 4,
     aggregate_all(count, board:bug(Color,_,_,_,_), Cnt),
-    Cnt < 12,
+    Cnt < 11, !,
     board:opponent(Color, OColor),
 
     bugCountMetric(Color, ant, AntCount),
@@ -126,19 +160,26 @@ eval(Color, Val):-
     FreeAnts is AntCount - PinnedAnts,
     pinnedAntsMetric(OColor, OPinnedAnts),  
 
-    % (\+mosquitoLikeAnt(Color), MosquitoAnt is 1; MosquitoAnt is 0),
+    bugCountMetric(Color, _, PlayedBugs),
+    bugCountMetric(Color, spider, SpiderCount),
+    queenSurrounded(Color, CQueenSurround),
+    queenSurrounded(Ocolor, OQueenSurround),
 
-    % bugCountMetric(Color, spider, SpiderCount),
-    % pinnedQueenMetric(OColor, PinnedQueen),
-    % queenSurrounded(Color, CQueenSurround),
-    % queenSurrounded(Ocolor, OQueenSurround),
+    Val is  20 * AntCount + 45 * OPinnedAnts + 10 * SpiderCount + 15 * PlayedBugs + 15 * OQueenSurround - 10 * CQueenSurround,!.
 
-    write_ln('This heuristic'),
-    write_ln(Color),
-    write_ln(FreeAnts),
-    write_ln(OPinnedAnts),
-    write_ln('Done'),
-    Val is FreeAnts + OPinnedAnts.
+eval(Color, Val):-
+    aggregate_all(count, board:bug(Color,_,_,_,_), Cnt),
+    Cnt >= 11, !,
+    board:opponent(Color, OColor),
+    bugCountMetric(Color, grasshoper, GCount),
+    bugCountMetric(Color, beetle, BCount),
+    queenSurrounded(Color, CQueenSurround),
+    queenSurrounded(Ocolor, OQueenSurround),
+
+    Val is 30 * GCount + 25 * BCount + 50 * OQueenSurround - 30 * CQueenSurround,!.
+
+
+
 
 
 
