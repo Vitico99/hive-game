@@ -1,7 +1,7 @@
 :-use_module(library(pce)).
 :-use_module(board).
 :-use_module(bugs).
-%:-use_module(cpu).
+:-use_module(cpu).
 :-use_module(ai).
 
 
@@ -204,11 +204,12 @@ drawDestinationCell(X1,Y1,X2,Y2,BugCell,B):-
     assertz(drawedPlaceable(X2,Y2,Cell)).
 
 moveBug(X1,Y1,X2,Y2,BugCell, B):-
-    clearPlaceableCells, 
-    drawedBug(X1,Y1,Cell1, B1),
+    clearPlaceableCells,
+    board:getCellTop(X1,Y1,S), 
+    drawedBug(X1,Y1, S, Cell1, B1),
     send(Cell1, free), 
     send(B1, free),
-    retract(drawedBug(X1,Y1,Cell1, B1)),
+    retract(drawedBug(X1,Y1,S,Cell1, B1)),
     board:removeBug(X1,Y1),
     drawBugCell(X2,Y2).
     
@@ -217,7 +218,8 @@ makeCpuMove():-
     board:currentColor(C1), 
     cpuColor(C2),
     C1 == C2,
-    cpu:ai:alphaBeta(C1,M,S),
+    ai:alphaBeta(C1,M,S),
+    %cpu:minimax(C1, 2, maximize, _, M),
     write_ln('here'),
     makeCpuMove(M).
 makeCpuMove().
@@ -248,7 +250,8 @@ drawBugCell(X, Y):- %add another mode like place/move to use the line that updat
         selectedBug(_,_,move); 
         (board:updateBugCount(C,T), updateCounter(C,T))
     ),
-    assertz(drawedBug(X,Y, Cell, B)),
+    board:getCellTop(X,Y,S),
+    assertz(drawedBug(X,Y,S,Cell, B)),
     board:changeCurrentColor,
     updateCurrentColorBox,
     clearPlaceableCells,
