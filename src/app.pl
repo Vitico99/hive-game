@@ -1,7 +1,6 @@
 :-use_module(library(pce)).
 :-use_module(board).
 :-use_module(bugs).
-:-use_module(cpu).
 :-use_module(ai).
 
 
