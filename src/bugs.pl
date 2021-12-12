@@ -17,11 +17,11 @@ getDestinations(X,Y,T,C):-
     board:currentColor(C),
     forall(destination(A,B), retractall(destination(A,B))),
     bugDestinations(X,Y,T),
-    (overPillbugDestinations(X,Y); write_ln('Generated possible moves 1')).
+    (overPillbugDestinations(X,Y); true).
 
 getDestinations(X,Y,_,_):-
     forall(destination(A,B), retractall(destination(A,B))),
-    (overPillbugDestinations(X,Y); write_ln('Generated possible moves 2')).
+    (overPillbugDestinations(X,Y); true).
 
 bugDestinations(X,Y,queen):- queenDestinations(X,Y).
 bugDestinations(X,Y,beetle):- beetleDestinations(X,Y).
@@ -31,6 +31,11 @@ bugDestinations(X,Y,ant):- antDestinations(X,Y).
 bugDestinations(X,Y,ladybug):- ladybugDestinations(X,Y).
 bugDestinations(X,Y,pigbull):- pigbullDestinations(X,Y).
 bugDestinations(X,Y,mosquito):- mosquitoDestinations(X,Y).
+
+countDestinations(X,Y, T, Count):-
+    forall(destination(A,B), retractall(destination(A,B))),
+    bugDestinations(X,Y,T),
+    aggregate_all(count,destination(_,_), Count).
 
 % ============================== Implemenation =================================
 

@@ -14,6 +14,9 @@
 :- dynamic lastPlacedBug/6. 
 :- dynamic opponent/2.
 
+opponent(white, black).
+opponent(black, white).
+
 % adyacent/4
 % Adyacent definition for an hexagonal grid
 adyacent(X1,Y1,X2,Y2):- X2 is X1 - 1, Y2 is Y1.
@@ -46,6 +49,13 @@ adyacentOpponent(X1, Y1, X2, Y2, C1):-
     adyacent(X1, Y1, X2, Y2),
     bug(C2, _, X2, Y2, _),
     C1 \== C2.
+
+adyacentAlly(X1, Y1, X2, Y2, C1):-
+    adyacent(X1, Y1, X2, Y2),
+    bug(C2, _, X2, Y2, _),
+    C1 == C2.
+
+
 
 % isIsolated/2
 % cell (X,Y) is isolated iff has only one non empty adyacent cell
@@ -149,8 +159,8 @@ initBoard(C1, C2):-
     assertz(color(C1)), assertz(color(C2)),
     assertz(firstBug(C2)),
     assertz(currentColor(C1)),
-    assertz(opponent(C1,C2)),
-    assertz(opponent(C2,C1)),
+    % assertz(opponent(C1,C2)),
+    % assertz(opponent(C2,C1)),
     assertz(currentTurn(C1,1)),
     assertz(currentTurn(C2,1)),
     assertz(availableBug(C1, queen, 1)),
@@ -255,10 +265,10 @@ canBeMoved(X, Y, S):-
     lastPlacedBug(C1, C2, _, X, Y, S),
     C1 == C2.
 
-opponent(C1, C2):-
-    color(C1),
-    color(C2),
-    C1 \== C2.
+% opponent(C1, C2):-
+%     color(C1),
+%     color(C2),
+%     C1 \== C2.
 
 setFrontier(X,Y):-
     frontier(X,Y).
@@ -266,6 +276,40 @@ setFrontier(X,Y):-
 setFrontier(X,Y):-
     assertz(frontier(X,Y)).
 
+saveBoard(Bugs, Frontier, CurrentColor, CurrentTurn, AvailableBugs,LastPlacedBug, FirstBug):-
+    findall(bug(C1,T1,X1,Y1,S1), bug(C1,T1,X1,Y1,S1), Bugs),
+    findall(frontier(X2,Y2), frontier(X2,Y2), Frontier),
+    currentColor(CurrentColor),
+    findall(currentTurn(X3,Y3), currentTurn(X3,Y3), CurrentTurn),
+    findall(availableBug(C4,T4,Cnt4), availableBug(C4,T4,Cnt4), AvailableBugs),
+    findall( lastPlacedBug(C51,C5, T5,X5,Y5,S5), lastPlacedBug(C51,C5,T5,X5,Y5,S5), LastPlacedBug),
+    findall(firstBug(C6), firstBug(C6), FirstBug).
+
+
+
+
+clearBoard():-
+    retractall(bug(_,_,_,_,_)),
+    retractall(frontier(_,_)),
+    retractall(currentColor(_)),
+    retractall(currentTurn(_,_)),
+    retractall(availableBug(_,_,_)),
+    retractall(lastPlacedBug(_,_,_,_,_,_)),
+    retractall(firstBug(_)).
+
+loadBoard(Bugs, Frontier, CurrentColor, CurrentTurn, AvailableBugs,LastPlacedBug,FirstBug):-
+    clearBoard,
+    assertzList(Bugs),
+    assertzList(Frontier),
+    assertz(currentColor(CurrentColor)),
+    assertzList(CurrentTurn),
+    assertzList(AvailableBugs),
+    assertzList(LastPlacedBug),
+    assertzList(FirstBug). 
+
+    
+assertzList([]).
+assertzList([H|T]):-assertz(H), assertzList(T).
 unsetFrontier(X,Y):-
     frontier(X,Y),
     retract(frontier(X,Y)).
@@ -276,5 +320,7 @@ colorWin(C):-
     opponent(C, C1),
     bug(C1, queen, X1, Y1,0),!,
     \+ emptyAdyacent(X1,Y1,_,_). 
+
+
 
   
